@@ -39,5 +39,10 @@ def build_agent(config: dict[str, Any] | None = None) -> Agent:
     # Ejemplo de registro (elimínenlo cuando sus herramientas estén listas):
     # from student_framework.tools.example import reverse_string, reverse_string_schema
     # agent.register_tool(reverse_string, reverse_string_schema)
+    from student_framework.tools.simple_calc import simple_calc, simple_calc_schema
+    from student_framework.tools.lector_archivos import leer_archivo, leer_archivo_schema
+    agent.register_tool(simple_calc, simple_calc_schema)
+    agent.register_tool(leer_archivo, leer_archivo_schema)
+
 
     return agent

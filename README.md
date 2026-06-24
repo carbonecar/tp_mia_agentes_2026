@@ -248,6 +248,11 @@ agente.
 ```bash
 pytest tests/conformance/test_m1.py
 ```
+### Nota: 
+se corren de la siguiente forma
+```bash
+python3 -m pytest tests/conformance/test_m1.py
+```
 
 Si en lugar de `NotImplementedError` ven errores de importación (p. ej.
 `ModuleNotFoundError`), repitan el paso 2.

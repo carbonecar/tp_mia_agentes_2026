@@ -15,9 +15,10 @@ from typing import Any, Callable
 
 from mia_agents.protocols import LLMClient
 from mia_agents.types import AgentResult, ToolSchema
-
-
+from mia_agents.types import AgentStep
 class MyAgent:
+    """Agente autónomo de ejemplo."""""
+
     def __init__(
         self,
         llm_client: LLMClient,
@@ -49,6 +50,8 @@ class MyAgent:
         self._max_iterations = max_iterations
         self._max_history_messages = max_history_messages
         # TODO (M1): inicializa el estado interno para las herramientas registradas.
+        self._tools = {}
+        self._schemas = {}
         # TODO (M2): inicializa la estructura de historial conversacional.
 
     def register_tool(
@@ -65,7 +68,8 @@ class MyAgent:
         El callable se invoca con kwargs que coinciden con la firma.
         Debe devolver una cadena.
         """
-        raise NotImplementedError("M1: implementa el registro de herramientas")
+        self._tools[schema.name] = tool
+        self._schemas[schema.name] = schema
 
     def run(self, user_message: str) -> AgentResult:
         """Ejecuta el bucle del agente hasta una respuesta final o hasta max_iterations.
@@ -91,7 +95,65 @@ class MyAgent:
         `LLMResponse` y exponlos en `AgentResult.input_tokens` /
         `AgentResult.output_tokens`.
         """
-        raise NotImplementedError("M1: implementa el bucle del agente")
+        import json
+
+        messages: list[dict] = [{"role": "user", "content": user_message}]
+        steps: list[AgentStep] = []
+
+        for _ in range(self._max_iterations):
+            llm_response = self._llm.chat(
+                messages=messages,
+                tools=list(self._schemas.values()) if self._schemas else None,
+                system=self._system,
+            )
+
+            if not llm_response.tool_calls:
+                return AgentResult(
+                    answer=llm_response.content or "",
+                    steps=steps,
+                    input_tokens=llm_response.input_tokens,
+                    output_tokens=llm_response.output_tokens,
+                )
+
+            # Agrega el mensaje del assistant con sus tool_calls al historial
+            messages.append({
+                "role": "assistant",
+                "content": llm_response.content or "",
+                "tool_calls": [
+                    {"id": tc.id, "function": {"name": tc.name, "arguments": tc.arguments}}
+                    for tc in llm_response.tool_calls
+                ],
+            })
+
+            # Ejecuta todas las tools y agrega los resultados al historial
+            for tool_call in llm_response.tool_calls:
+                error = None
+                if tool_call.name not in self._tools:
+                    error = f"Herramienta desconocida: '{tool_call.name}'"
+                    tool_result_str = error
+                else:
+                    try:
+                        kwargs = json.loads(tool_call.arguments) if tool_call.arguments else {}
+                        tool_result_str = str(self._tools[tool_call.name](**kwargs))
+                    except Exception as e:
+                        error = str(e)
+                        tool_result_str = f"Error: {e}"
+
+                steps.append(AgentStep(
+                    tool_name=tool_call.name,
+                    tool_input=tool_call.arguments,
+                    tool_output=None if error else tool_result_str,
+                    error=error,
+                ))
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": tool_result_str,
+                })
+
+        return AgentResult(answer="", steps=steps)
+        
+
 
     def structured_call(
         self,
