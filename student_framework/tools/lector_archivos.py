@@ -8,7 +8,7 @@ from mia_agents.types import ToolSchema
 import os
 
 def leer_archivo(
-    ruta: Annotated[str, Field(description="Ruta del archivo a leer.")],
+    ruta: Annotated[str, Field(description="Nombre del archivo a leer en el directorio archivos.")],
 ) -> str:
     """Lee el contenido de un archivo de texto y devuelve su contenido como una cadena.
 
