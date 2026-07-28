@@ -95,6 +95,79 @@ Salida esperada (JSON):
 {"pesos": {"AAPL": -0.172198, "MSFT": 0.867702, "GOOG": 0.304496}, "retorno_esperado": 0.007002, "riesgo_portfolio": 0.004181}
 ```
 
+---
+
+# Informe — Milestone 2
+
+## Estrategia de memoria
+
+El agente pasa a ser **estatal**: `self._history` vive en la instancia y persiste entre llamadas a `run` (no se reinicia por turno). Cada `run` apila el `user_message` recibido y, al final, la respuesta del asistente (y los mensajes `tool` intermedios si hubo tool calls).
+
+Para respetar `max_history_messages` implementamos **ventana deslizante** (`_windowed_messages` en [student_framework/agent.py](student_framework/agent.py)):
+
+- Si el historial completo entra en el presupuesto, se envía tal cual.
+- Si no entra, se toman los últimos `max_history_messages` mensajes.
+- **Invariante de recencia**: si esa ventana "natural" dejaría afuera al último mensaje de usuario (esto puede pasar dentro de un mismo `run` con muchas idas y vueltas de tool calls), se lo ancla explícitamente y se completa el resto del presupuesto con los mensajes más recientes posteriores a él. El mensaje de usuario más reciente nunca se descarta, aunque eso implique perder más contexto "de cola" del que perdería una ventana estrictamente contigua.
+- Para evitar que la ventana arranque con un mensaje `role: tool` huérfano (cuyo `tool_call` quedó fuera de la ventana, lo cual rompería a un proveedor real como Bedrock/Ollama), se recorta cualquier mensaje `tool` líder tras aplicar el corte.
+
+Elegimos sliding window puro (sin resumen ni offload/retrieve) porque:
+- Es la estrategia obligatoria del enunciado y cubre el criterio de aprobación ("conversación que supere el presupuesto de contexto y el agente sigue comportándose con sensatez") sin depender de una llamada extra al LLM para resumir (que introduciría costo, latencia y otro punto de falla).
+- El tradeoff conocido es pérdida de contexto antiguo: si la conversación gira en torno a algo dicho hace muchos turnos y ya salió de la ventana, el agente lo "olvida". Para este alcance (M2) lo aceptamos explícitamente; una estrategia de *summarization* sería el siguiente paso natural (comprimir los mensajes descartados en un mensaje `system`/`user` sintético) si se necesitara memoria de largo plazo sin perder detalle.
+
+**Problema encontrado**: la tensión entre "nunca superar el cap" y "nunca perder el último mensaje de usuario" no siempre es resoluble con un corte contiguo simple — de ahí la rama de anclaje explícito descripta arriba.
+
+## Salida estructurada
+
+`structured_call(prompt, schema, max_repair_attempts)` mantiene una conversación **aislada** (no comparte `self._history` con `run`, ya que el contrato exige que la *única* tool ofrecida sea `final_result`, y mezclarla con el resto del historial no aporta nada al problema puntual de generar un objeto validado):
+
+1. Arma `tools=[final_result_tool_schema(schema)]` (`ToolSchema` derivado del `BaseModel` vía `tool_schema_from_model`) y lo pasa en **cada** llamada a `chat`.
+2. Busca en `response.tool_calls` una invocación a `FINAL_RESULT_TOOL_NAME`.
+   - Si no hay ninguna (el modelo respondió con texto libre o invocó otra tool): se agrega un mensaje de reparación explicando que debe usar `final_result` y nada más.
+   - Si hay una: se parsea `arguments` como JSON y se valida con `schema.model_validate(...)`.
+3. Ante `JSONDecodeError` o `ValidationError`/`TypeError`, se agrega el mensaje `assistant` con el `tool_call` fallido más un mensaje `role: tool` con el motivo exacto del fallo (mismo patrón que usa un proveedor real para tool results), y se reintenta.
+4. Se permite `max_repair_attempts` reparaciones además del intento inicial (total: `max_repair_attempts + 1` llamadas a `chat`). Si a la última le sigue fallando, se levanta `StructuredOutputError` (subclase de `RuntimeError`) con el último error registrado — nunca se devuelve `None` ni una instancia parcial.
+
+## Errores en herramientas
+
+**Calculadora** (`simple_calc.py`): valida explícitamente cada operando con `_a_numero` antes de operar (los tipos de la firma no se aplican en runtime — vienen del JSON del `tool_call`, así que si el LLM manda un string no numérico había que interceptarlo a mano). Casos cubiertos:
+- Operando no numérico → indica qué parámetro, qué valor recibió y su tipo (ej: *"El parámetro 'operando1' recibió 'cuarenta y dos' (str), que no es un número válido..."*).
+- Operador no soportado → lista los 4 operadores válidos.
+- División por cero → mensaje específico, no genérico.
+
+Ejemplo de recuperación: el LLM llama `simple_calc(operacion="suma", operando1="cuarenta y dos", operando2=1)`; la tool devuelve el error de arriba como `tool_output`; en el siguiente turno el LLM corrige a `operando1=42` y la tool responde `43.0`.
+
+**Lector de archivos** (`lector_archivos.py`): `_resolver_ruta_segura` centraliza la validación de sandbox (`os.path.commonpath` contra el directorio `archivos/` resuelto en absoluto) antes de tocar el filesystem. Casos cubiertos:
+- Ruta vacía, absoluta, con `..`, o que resuelve fuera de `archivos/` → explica la regla violada y da un ejemplo de ruta válida.
+- Archivo inexistente → si el directorio contenedor existe, **lista los archivos disponibles** ahí (`os.listdir`) para que el LLM pueda elegir bien.
+- Ruta es un directorio → lo indica y lista su contenido.
+
+Ejemplo de recuperación: el LLM pide `leer_archivo(ruta="notas.txt")` que no existe; la tool responde *"El archivo 'notas.txt' no existe. Archivos disponibles en su directorio: archivo.txt."*; el LLM corrige a `ruta="archivo.txt"` en el siguiente turno.
+
+## Resiliencia
+
+`_is_transient_error` clasifica una excepción como transitoria por tipo (`TimeoutError`, `ConnectionError`) o por texto (timeout, 429/5xx, rate limit, throttling, problemas de red). No hay una jerarquía de excepciones común entre Bedrock/Ollama/mocks de test, así que la heurística de texto es deliberada.
+
+- `_chat_with_retry` envuelve cada llamada a `self._llm.chat` (usada tanto en `run` como en `structured_call`): reintenta con backoff lineal hasta `max_llm_retries` (default 3) si el error es transitorio; cualquier otro error se propaga y `run` lo captura para devolver un `AgentResult(error=...)` limpio (nunca lanza).
+- `_execute_tool` envuelve cada invocación de tool: reintenta hasta `max_tool_retries` (default 2) si el error es transitorio; el resto (herramienta desconocida, JSON inválido, o las excepciones de validación propias de `simple_calc`/`leer_archivo`) se devuelve tal cual como `AgentStep.error` — son justamente los errores "recuperables por el LLM", no por el agente.
+
+## Tracking de tokens
+
+`_accumulate(total, value)` sirve tanto para `input_tokens` como `output_tokens`: si `value` es `None` no cambia el total (permite que ambos campos empiecen en `None` si ninguna respuesta reportó tokens); en cuanto una respuesta reporta un valor no nulo, se empieza a sumar tratando los `None` subsiguientes como 0. Se acumula por llamada a `run` (no a través de toda la conversación).
+
+## Modos de fallo dentro vs. fuera de alcance
+
+**Dentro de alcance:**
+- Historial que excede el presupuesto de contexto (sliding window con recencia garantizada).
+- Salida estructurada malformada (texto libre, JSON inválido, schema inválido) → reparación acotada.
+- Fallos transitorios de LLM y tools (timeout/5xx/rate limit/red) → retry con backoff.
+- Argumentos inválidos en `simple_calc`/`leer_archivo` → error accionable para que el LLM corrija.
+
+**Fuera de alcance (deliberado):**
+- Compresión/resumen del contexto descartado (*summarization* u *offload/retrieve*): se documenta como alternativa pero no se implementa: agregaría una llamada extra al LLM (costo/latencia/otro punto de falla) para un problema que sliding window ya resuelve dentro de lo pedido.
+- Reintentos infinitos o backoff exponencial con jitter: el backoff es lineal y acotado por `max_llm_retries`/`max_tool_retries`; no hay circuit breaker ni límite de tiempo total.
+- Validación de que un `tool_call_id` de reparación coincida exactamente con el formato esperado por cada proveedor real (Bedrock/Ollama) — el formato de mensajes usado en `structured_call`/`run` es el normalizado del framework; la traducción final es responsabilidad del `LLMClient` fijo.
+- Símlinks que escapen del sandbox de `leer_archivo` sin pasar por `..` explícito en la ruta (se valida la ruta resuelta contra el directorio base, pero no se resuelven symlinks del propio archivo destino).
+
 ## Ejecución vía el agente (CLI)
 
 El agente expone la tool al LLM, que decide cuándo invocarla a partir de un mensaje en lenguaje natural:
