@@ -41,8 +41,13 @@ def build_agent(config: dict[str, Any] | None = None) -> Agent:
     # agent.register_tool(reverse_string, reverse_string_schema)
     from student_framework.tools.simple_calc import simple_calc, simple_calc_schema
     from student_framework.tools.lector_archivos import leer_archivo, leer_archivo_schema
+    from student_framework.tools.portfolio_markowitz import (
+        optimizar_portfolio_markowitz,
+        optimizar_portfolio_markowitz_schema,
+    )
     agent.register_tool(simple_calc, simple_calc_schema)
     agent.register_tool(leer_archivo, leer_archivo_schema)
+    agent.register_tool(optimizar_portfolio_markowitz, optimizar_portfolio_markowitz_schema)
 
 
     return agent

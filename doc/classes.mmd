@@ -1,0 +1,75 @@
+graph TB
+    subgraph mia_agents["📦 mia_agents (framework fijo)"]
+        subgraph types["types.py"]
+            ToolCall
+            LLMResponse
+            ToolSchema
+            AgentStep
+            AgentResult
+        end
+
+        subgraph protocols["protocols.py"]
+            LLMClientProto["«Protocol» LLMClient"]
+            AgentProto["«Protocol» Agent"]
+        end
+
+        subgraph llm_client["llm_client.py"]
+            BaseProv["«ABC» _BaseLLMProvider"]
+            OllamaProvider
+            BedrockProvider
+            LLMClient
+        end
+
+        subgraph tool_schema["tool_schema.py"]
+            tool_schema_from_callable
+            final_result_tool_schema
+        end
+
+        subgraph testing["testing/"]
+            MockLLMClient
+            make_recording_tool
+        end
+
+        CLI["cli.py"]
+    end
+
+    subgraph student_framework["📦 student_framework (a implementar)"]
+        MyAgent
+        build_agent
+    end
+
+    subgraph tests["🧪 tests/conformance"]
+        TestM1["test_m1.py"]
+        TestM2["test_m2.py"]
+        TestM3["test_m3_world.py"]
+    end
+
+    %% Herencia
+    BaseProv --> OllamaProvider
+    BaseProv --> BedrockProvider
+    LLMClient --> BaseProv
+
+    %% Protocolo satisfecho
+    OllamaProvider -.->|satisface| LLMClientProto
+    BedrockProvider -.->|satisface| LLMClientProto
+    LLMClient -.->|satisface| LLMClientProto
+    MockLLMClient -.->|satisface| LLMClientProto
+    MyAgent -.->|satisface| AgentProto
+
+    %% Dependencias
+    MyAgent -->|usa| LLMClient
+    MyAgent -->|registra| ToolSchema
+    MyAgent -->|devuelve| AgentResult
+    AgentResult -->|contiene| AgentStep
+    LLMResponse -->|contiene| ToolCall
+
+    ToolSchema -.->|generado por| tool_schema_from_callable
+    ToolSchema -.->|generado por| final_result_tool_schema
+
+    build_agent -->|crea| MyAgent
+    CLI -->|llama| build_agent
+
+    TestM1 -->|usa| MockLLMClient
+    TestM1 -->|prueba| MyAgent
+    TestM2 -->|usa| MockLLMClient
+    TestM2 -->|prueba| MyAgent
