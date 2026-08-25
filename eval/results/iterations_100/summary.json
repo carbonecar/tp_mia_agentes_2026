@@ -1,0 +1,153 @@
+{
+  "label": "iterations_100",
+  "module": "student_framework",
+  "config": {
+    "max_iterations": 100
+  },
+  "trials_per_scenario": 3,
+  "wall_clock_seconds_total": 1224.896464707912,
+  "metrics": {
+    "overall": {
+      "trials_total": 24,
+      "success_rate": 0.5,
+      "mean_efficiency_ratio": 0.5840689891378136,
+      "mean_input_tokens": 174843.58333333334,
+      "mean_output_tokens": 2716.125,
+      "mean_wall_clock_seconds": 50.9921818888688
+    },
+    "by_scenario": {
+      "study-with-key": {
+        "difficulty": "easy",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 4.666666666666667,
+        "optimal_calls": 3,
+        "mean_efficiency_ratio": 0.65,
+        "mean_steps_to_goal": 4.666666666666667,
+        "mean_real_efficiency_ratio": 0.65,
+        "mean_input_tokens": 9405.666666666666,
+        "mean_output_tokens": 300.6666666666667,
+        "mean_wall_clock_seconds": 5.483572708365197
+      },
+      "color-locks": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 43.666666666666664,
+        "optimal_calls": 11,
+        "mean_efficiency_ratio": 0.9110256410256411,
+        "mean_steps_to_goal": 26,
+        "mean_real_efficiency_ratio": 0.4230769230769231,
+        "mean_input_tokens": 163684,
+        "mean_output_tokens": 2929.3333333333335,
+        "mean_wall_clock_seconds": 49.75845965265762
+      },
+      "library-search": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 46,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.2696296296296296,
+        "mean_steps_to_goal": 18.5,
+        "mean_real_efficiency_ratio": 0.3786549707602339,
+        "mean_input_tokens": 242607.66666666666,
+        "mean_output_tokens": 4336.333333333333,
+        "mean_wall_clock_seconds": 66.22612926433794
+      },
+      "extreme-archive": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 9.333333333333334,
+        "optimal_calls": 4,
+        "mean_efficiency_ratio": 1.1690821256038646,
+        "mean_steps_to_goal": 23,
+        "mean_real_efficiency_ratio": 0.17391304347826086,
+        "mean_input_tokens": 79877.66666666667,
+        "mean_output_tokens": 1306.3333333333333,
+        "mean_wall_clock_seconds": 17.109440847299993
+      },
+      "apartment-keys": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 40.666666666666664,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.44757575757575757,
+        "mean_steps_to_goal": 11,
+        "mean_real_efficiency_ratio": 0.6363636363636364,
+        "mean_input_tokens": 141292,
+        "mean_output_tokens": 2022,
+        "mean_wall_clock_seconds": 40.861493805345766
+      },
+      "office-sequence": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 46.666666666666664,
+        "optimal_calls": 13,
+        "mean_efficiency_ratio": 0.5805630428271937,
+        "mean_steps_to_goal": 19,
+        "mean_real_efficiency_ratio": 0.6842105263157895,
+        "mean_input_tokens": 168819.33333333334,
+        "mean_output_tokens": 2128,
+        "mean_wall_clock_seconds": 55.698725277674384
+      },
+      "vault-combination": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 95.33333333333333,
+        "optimal_calls": 21,
+        "mean_efficiency_ratio": 0.34820512820512817,
+        "mean_steps_to_goal": 29,
+        "mean_real_efficiency_ratio": 0.7241379310344828,
+        "mean_input_tokens": 293072,
+        "mean_output_tokens": 4429.666666666667,
+        "mean_wall_clock_seconds": 90.8046701529529
+      },
+      "backtracking-vault": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 78,
+        "optimal_calls": 18,
+        "mean_efficiency_ratio": 0.2964705882352941,
+        "mean_steps_to_goal": 25,
+        "mean_real_efficiency_ratio": 0.72,
+        "mean_input_tokens": 299990.3333333333,
+        "mean_output_tokens": 4276.666666666667,
+        "mean_wall_clock_seconds": 81.9949634023166
+      }
+    }
+  },
+  "failure_modes": {
+    "max_iterations_agotado": {
+      "color-locks": 1,
+      "library-search": 1,
+      "apartment-keys": 1,
+      "office-sequence": 1,
+      "vault-combination": 2,
+      "backtracking-vault": 2
+    },
+    "accion_repetida_fallida": {
+      "color-locks": 1,
+      "library-search": 1,
+      "apartment-keys": 1,
+      "office-sequence": 1,
+      "vault-combination": 1,
+      "backtracking-vault": 2
+    },
+    "se_detuvo_sin_lograr_la_meta": {
+      "color-locks": 1,
+      "extreme-archive": 2,
+      "office-sequence": 1
+    },
+    "perdida_de_mapa_multi_sala": {
+      "apartment-keys": 1,
+      "vault-combination": 2,
+      "backtracking-vault": 1
+    }
+  }
+}

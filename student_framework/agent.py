@@ -65,7 +65,11 @@ def _is_transient_error(exc: BaseException) -> bool:
 
 
 def _accumulate(total: int | None, value: int | None) -> int | None:
-    """Suma `value` a `total` tratando `None` puntual como 0, sin perder el total ya iniciado."""
+    """
+    
+    Requisito de M2 contar el costo de tokens de las llamas.
+    Suma `value` a `total` tratando `None` puntual como 0, sin perder el total ya iniciado.
+    """
     if value is None:
         return total
     return (total or 0) + value
@@ -134,6 +138,8 @@ class MyAgent:
 
         El callable se invoca con kwargs que coinciden con la firma.
         Debe devolver una cadena.
+
+        Las Tools y esquemas no son mas que una array asociativo con el nombre del schema como key y la tool (callable) como value
         """
         self._tools[schema.name] = tool
         self._schemas[schema.name] = schema
@@ -152,7 +158,15 @@ class MyAgent:
         posteriores) de los que la ventana normal descartaría. Además,
         evitamos que la ventana arranque con un mensaje `role: tool`
         huérfano (su `tool_call` correspondiente quedó fuera de la
-        ventana), lo cual confundiría a un proveedor real.
+        ventana), lo cual rompe proveedores reales como Bedrock
+        (`ValidationException: toolResult blocks exceed toolUse blocks of
+        previous turn` — visto en producción con `max_iterations` alto,
+        ver INFORME_M3.md). Ese chequeo tiene que aplicarse tanto al
+        recorte simple como a la cola que se ancla después del mensaje de
+        usuario: un slice de cola puede arrancar en medio de un grupo
+        `assistant(tool_calls=[...])` + sus respuestas `tool`, dejando un
+        huérfano en `keep_after[0]` que un chequeo sobre `window[0]` no ve
+        (ahí `window[0]` es el mensaje de usuario anclado, no el huérfano).
         """
         history = self._history
         cap = max(1, self._max_history_messages)
@@ -174,6 +188,8 @@ class MyAgent:
                 # presupuesto restante.
                 after_user = history[last_user_idx + 1 :]
                 keep_after = after_user[-(cap - 1) :] if cap > 1 else []
+                while keep_after and keep_after[0].get("role") == "tool":
+                    keep_after = keep_after[1:]
                 window = [history[last_user_idx]] + keep_after
 
         while len(window) > 1 and window[0].get("role") == "tool":

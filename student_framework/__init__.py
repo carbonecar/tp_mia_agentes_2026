@@ -33,6 +33,18 @@ def build_agent(config: dict[str, Any] | None = None) -> Agent:
     
     if "max_history_messages" in config:
         kwargs["max_history_messages"] = config["max_history_messages"]
+    # Overrides opcionales usados por la infraestructura de evaluación de M3
+    # (eval/) para correr experimentos sin tocar build_agent por cada uno.
+    optional_keys_list = (
+        "max_iterations",
+        "system_prompt",
+        "max_llm_retries",
+        "max_tool_retries",
+        "retry_backoff_seconds",
+    )
+    for optional_key in optional_keys_list:
+        if optional_key in config:
+            kwargs[optional_key] = config[optional_key]
 
     agent = MyAgent(**kwargs)
 

@@ -1,0 +1,35 @@
+{
+  "label": "smock",
+  "module": "student_framework",
+  "config": {
+    "max_iterations": 100
+  },
+  "trials_per_scenario": 1,
+  "wall_clock_seconds_total": 20.726223333040252,
+  "metrics": {
+    "overall": {
+      "trials_total": 1,
+      "success_rate": 1.0,
+      "mean_efficiency_ratio": 0.6111111111111112,
+      "mean_input_tokens": 48757,
+      "mean_output_tokens": 1152,
+      "mean_wall_clock_seconds": 20.45664983300958
+    },
+    "by_scenario": {
+      "color-locks": {
+        "difficulty": "medium",
+        "trials": 1,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 18,
+        "optimal_calls": 11,
+        "mean_efficiency_ratio": 0.6111111111111112,
+        "mean_steps_to_goal": 18,
+        "mean_real_efficiency_ratio": 0.6111111111111112,
+        "mean_input_tokens": 48757,
+        "mean_output_tokens": 1152,
+        "mean_wall_clock_seconds": 20.45664983300958
+      }
+    }
+  },
+  "failure_modes": {}
+}

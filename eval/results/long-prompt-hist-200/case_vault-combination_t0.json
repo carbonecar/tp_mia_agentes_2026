@@ -1,0 +1,89 @@
+{
+  "scenario": "vault-combination",
+  "difficulty": "extreme",
+  "trial": 0,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 9.159840583917685,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "look",
+        "tool_input": "{}",
+        "tool_output": "Estás en Vestíbulo.\nUn vestíbulo de hormigón con un panel de seguridad junto a la puerta principal. El panel tiene tres ranuras vacías rotuladas 'NÚCLEO'. Un pasillo se abre al norte.\nVes:\n  - puerta principal [id: puerta_principal] (cerrada)\nSalidas: norte.",
+        "error": null
+      },
+      {
+        "tool_name": "examine",
+        "tool_input": "{\"target\": \"puerta_principal\"}",
+        "tool_output": "puerta principal: Una puerta blindada controlada por un panel de tres ranuras. Solo abre cuando se colocan los tres núcleos de energía.\nEstado: cerrada.\nRequiere 3 piezas en total; faltan: núcleo rojo, núcleo azul, núcleo verde.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"norte\"}",
+        "tool_output": "Caminas hacia norte. Llegas a Galería central.",
+        "error": null
+      },
+      {
+        "tool_name": "look",
+        "tool_input": "{}",
+        "tool_output": "Estás en Galería central.\nUna galería que distribuye hacia varias salas: el taller al este, la biblioteca al oeste y, al norte, una puerta metálica de depósito que está cerrada.\nVes:\n  - puerta del depósito [id: puerta_deposito] (cerrada)\nSalidas: este, norte (bloqueada por puerta del depósito), oeste, sur.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"este\"}",
+        "tool_output": "Caminas hacia este. Llegas a Taller.",
+        "error": null
+      },
+      {
+        "tool_name": "look",
+        "tool_input": "{}",
+        "tool_output": "Estás en Taller.\nUn taller con un banco de herramientas lleno de cajones. Huele a aceite y metal.\nVes:\n  - banco de herramientas [id: banco_herramientas]\nSalidas: oeste.",
+        "error": null
+      },
+      {
+        "tool_name": "examine",
+        "tool_input": "{\"target\": \"banco_herramientas\"}",
+        "tool_output": "banco de herramientas: Un banco con varios cajones. Al abrirlos encontrás piezas sueltas.\nContiene:\n  - núcleo rojo [id: nucleo_rojo]\n  - llave del depósito [id: llave_deposito]\n  - destornillador [id: destornillador]",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"nucleo_rojo\"}",
+        "tool_output": "Tomas núcleo rojo.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"sur\"}",
+        "tool_output": "Error: no hay salida 'sur' desde aquí. Salidas disponibles: oeste.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"oeste\"}",
+        "tool_output": "Caminas hacia oeste. Llegas a Galería central.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 27776,
+    "output_tokens": 572
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:vestibulo",
+    "enter:galeria",
+    "enter:taller",
+    "take:nucleo_rojo",
+    "enter:galeria"
+  ]
+}
