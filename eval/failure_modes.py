@@ -24,6 +24,60 @@ UNKNOWN = "sin_categorizar"
 
 _MULTI_ROOM_SCENARIOS = {"apartment-keys", "office-sequence", "vault-combination", "backtracking-vault"}
 
+# Cota superior de "sala más grande" entre los 4 escenarios multi-sala
+# (vault-combination tiene 5). Una ida-y-vuelta completa a través de una
+# cadena lineal de N salas son 2*(N-1) movimientos, así que un ciclo real
+# de "ir hasta el fondo y volver" puede tener período hasta 2*(5-1)=8.
+_MAX_ROOM_CYCLE_PERIOD = 8
+_MIN_ROOM_CYCLE_REPEATS = 3
+
+
+def _has_unproductive_room_cycle(
+    event_log: list[str],
+    max_period: int = _MAX_ROOM_CYCLE_PERIOD,
+    min_repeats: int = _MIN_ROOM_CYCLE_REPEATS,
+) -> bool:
+    """Detecta si `event_log` tiene un tramo de puro `enter:` (sin ningún
+    `take:`/`open:` intercalado) donde el mismo ciclo corto de salas se
+    repite `min_repeats` veces seguidas — señal de que el agente quedó
+    rebotando sin progreso.
+
+    A diferencia de contar "cuántos `go` hubo" (heurística anterior, que
+    disparaba con solo 5 movimientos en un mapa de 2 direcciones y por lo
+    tanto flaggeaba incluso soluciones casi óptimas de `backtracking-vault`),
+    esto exige que el *mismo* patrón de salas se repita varias veces sin
+    ningún `take`/`open` de por medio. Un backtracking legítimo (ir hasta el
+    fondo y volver una sola vez, o volver porque una puerta se desbloqueó)
+    no repite el mismo ciclo corto 3+ veces seguidas sin traer nada nuevo;
+    un agente atascado sí. No detecta ciclos de período > `max_period` ni
+    extravío que no sea cíclico (p. ej. deambular sin repetir patrón) —
+    sigue siendo una heurística, léase junto a la transcripción.
+    """
+    runs: list[list[str]] = []
+    current: list[str] = []
+    for event in event_log:
+        if event.startswith("enter:"):
+            current.append(event[len("enter:") :])
+        else:
+            if current:
+                runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+
+    for run in runs:
+        n = len(run)
+        for period in range(1, max_period + 1):
+            window_len = period * min_repeats
+            if n < window_len:
+                continue
+            for start in range(n - window_len + 1):
+                window = run[start : start + window_len]
+                cycle = window[:period]
+                if all(window[i] == cycle[i % period] for i in range(window_len)):
+                    return True
+    return False
+
 
 def _step_failed(step: dict[str, Any]) -> bool:
     """Un `AgentStep` cuenta como fallido si tiene `error` (excepción de
@@ -99,13 +153,7 @@ def classify_failure(case: dict[str, Any]) -> list[str]:
         categories.append(SEQUENCE_ORDER_VIOLATED)
 
     if case["scenario"] in _MULTI_ROOM_SCENARIOS:
-        go_targets = [s.get("tool_input") for s in steps if s.get("tool_name") == "go"]
-        # Heurística aproximada: navegar más del doble de veces que
-        # direcciones distintas pidió sugiere ida-y-vuelta sin necesidad,
-        # no navegación dirigida. No distingue backtracking legítimo
-        # (p. ej. `backtracking-vault`, que lo requiere por diseño) de
-        # extravío real — usar junto con la transcripción, no aislado.
-        if len(go_targets) >= 4 and len(go_targets) > 2 * len(set(go_targets)):
+        if _has_unproductive_room_cycle(case.get("event_log") or []):
             categories.append(MULTI_ROOM_MAP_LOST)
 
     if not categories:
