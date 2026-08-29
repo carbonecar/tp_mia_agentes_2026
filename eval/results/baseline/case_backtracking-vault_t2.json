@@ -1,0 +1,89 @@
+{
+  "scenario": "backtracking-vault",
+  "difficulty": "extreme",
+  "trial": 2,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 8.293578584096394,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"norte\"}",
+        "tool_output": "Caminas hacia norte. Llegas a Sala A.",
+        "error": null
+      },
+      {
+        "tool_name": "look",
+        "tool_input": "{}",
+        "tool_output": "Estás en Sala A.\nUna sala con un escritorio cubierto de papeles. Al norte hay una puerta blindada cerrada.\nVes:\n  - escritorio [id: escritorio]\n  - puerta blindada [id: puerta_blindada] (cerrada)\nSalidas: norte (bloqueada por puerta blindada), sur.",
+        "error": null
+      },
+      {
+        "tool_name": "examine",
+        "tool_input": "{\"target\": \"escritorio\"}",
+        "tool_output": "escritorio: Un escritorio con cajones. Dentro hay una llave y papeles inútiles.\nContiene:\n  - llave intermedia [id: llave_intermedia]",
+        "error": null
+      },
+      {
+        "tool_name": "examine",
+        "tool_input": "{\"target\": \"puerta_blindada\"}",
+        "tool_output": "puerta blindada: Una puerta blindada entre la sala A y la sala B. Cerrada.\nEstado: cerrada.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"norte\"}",
+        "tool_output": "Error: el paso hacia norte está bloqueado por puerta blindada. Tenés que abrirla primero.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_intermedia\", \"target\": \"puerta_blindada\"}",
+        "tool_output": "Error: no llevas ningún 'llave_intermedia'.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"sur\"}",
+        "tool_output": "Caminas hacia sur. Llegas a Entrada de la bóveda.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_intermedia\"}",
+        "tool_output": "Error: 'llave_intermedia' no es visible o accesible desde aquí.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"norte\"}",
+        "tool_output": "Caminas hacia norte. Llegas a Sala A.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_intermedia\"}",
+        "tool_output": "Tomas llave intermedia.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 20445,
+    "output_tokens": 579
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:entrada",
+    "enter:sala_a",
+    "enter:entrada",
+    "enter:sala_a",
+    "take:llave_intermedia"
+  ]
+}

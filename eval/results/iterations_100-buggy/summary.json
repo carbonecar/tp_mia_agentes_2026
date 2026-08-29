@@ -1,0 +1,150 @@
+{
+  "label": "iterations_100",
+  "module": "student_framework",
+  "config": {
+    "max_iterations": 100
+  },
+  "trials_per_scenario": 3,
+  "wall_clock_seconds_total": 471.1421188330278,
+  "metrics": {
+    "overall": {
+      "trials_total": 24,
+      "success_rate": 0.4166666666666667,
+      "mean_efficiency_ratio": 0.5613149131570184,
+      "mean_input_tokens": 74126.20833333333,
+      "mean_output_tokens": 1249.125,
+      "mean_wall_clock_seconds": 19.602937098927214
+    },
+    "by_scenario": {
+      "study-with-key": {
+        "difficulty": "easy",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 5.333333333333333,
+        "optimal_calls": 3,
+        "mean_efficiency_ratio": 0.5666666666666667,
+        "mean_steps_to_goal": 5.333333333333333,
+        "mean_real_efficiency_ratio": 0.5666666666666667,
+        "mean_input_tokens": 10685.666666666666,
+        "mean_output_tokens": 324.6666666666667,
+        "mean_wall_clock_seconds": 5.413572583347559
+      },
+      "color-locks": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 0.0,
+        "mean_tool_calls_used": 26,
+        "optimal_calls": 11,
+        "mean_efficiency_ratio": 0.42428571428571427,
+        "mean_steps_to_goal": null,
+        "mean_real_efficiency_ratio": null,
+        "mean_input_tokens": 77808.66666666667,
+        "mean_output_tokens": 1742.3333333333333,
+        "mean_wall_clock_seconds": 25.940296514037374
+      },
+      "library-search": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 17,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.5494736842105263,
+        "mean_steps_to_goal": 19,
+        "mean_real_efficiency_ratio": 0.3684210526315789,
+        "mean_input_tokens": 58570,
+        "mean_output_tokens": 1140.3333333333333,
+        "mean_wall_clock_seconds": 17.297909208689816
+      },
+      "extreme-archive": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 24.333333333333332,
+        "optimal_calls": 4,
+        "mean_efficiency_ratio": 0.16444444444444445,
+        "mean_steps_to_goal": 24,
+        "mean_real_efficiency_ratio": 0.16666666666666666,
+        "mean_input_tokens": 222313.33333333334,
+        "mean_output_tokens": 2297,
+        "mean_wall_clock_seconds": 34.87290288868826
+      },
+      "apartment-keys": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 12.333333333333334,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.5683760683760684,
+        "mean_steps_to_goal": 12.333333333333334,
+        "mean_real_efficiency_ratio": 0.5683760683760684,
+        "mean_input_tokens": 28951.333333333332,
+        "mean_output_tokens": 673,
+        "mean_wall_clock_seconds": 10.857509888669787
+      },
+      "office-sequence": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.0,
+        "mean_tool_calls_used": 20.666666666666668,
+        "optimal_calls": 13,
+        "mean_efficiency_ratio": 0.733939393939394,
+        "mean_steps_to_goal": null,
+        "mean_real_efficiency_ratio": null,
+        "mean_input_tokens": 54562,
+        "mean_output_tokens": 959,
+        "mean_wall_clock_seconds": 17.36516843033799
+      },
+      "vault-combination": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 27.666666666666668,
+        "optimal_calls": 21,
+        "mean_efficiency_ratio": 0.7633333333333333,
+        "mean_steps_to_goal": 28,
+        "mean_real_efficiency_ratio": 0.75,
+        "mean_input_tokens": 63644.333333333336,
+        "mean_output_tokens": 1297.3333333333333,
+        "mean_wall_clock_seconds": 21.287212736012105
+      },
+      "backtracking-vault": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.0,
+        "mean_tool_calls_used": 25,
+        "optimal_calls": 18,
+        "mean_efficiency_ratio": 0.72,
+        "mean_steps_to_goal": null,
+        "mean_real_efficiency_ratio": null,
+        "mean_input_tokens": 76474.33333333333,
+        "mean_output_tokens": 1559.3333333333333,
+        "mean_wall_clock_seconds": 23.788924541634817
+      }
+    }
+  },
+  "failure_modes": {
+    "fallo_llm_no_transitorio": {
+      "color-locks": 3,
+      "library-search": 1,
+      "extreme-archive": 1,
+      "office-sequence": 2,
+      "vault-combination": 2,
+      "backtracking-vault": 3
+    },
+    "accion_repetida_fallida": {
+      "color-locks": 3,
+      "office-sequence": 1,
+      "vault-combination": 2,
+      "backtracking-vault": 3
+    },
+    "se_detuvo_sin_lograr_la_meta": {
+      "library-search": 1,
+      "office-sequence": 1
+    },
+    "perdida_de_mapa_multi_sala": {
+      "office-sequence": 2,
+      "vault-combination": 2,
+      "backtracking-vault": 3
+    }
+  }
+}
