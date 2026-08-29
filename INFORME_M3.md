@@ -5,8 +5,11 @@
 > ventana deslizante de M2 (ventana con `tool` huérfano — ver sección 4),
 > que se corrigió y **re-confirmó contra Bedrock**: el modo de fallo del bug
 > (`fallo_llm_no_transitorio`) pasó de 12/24 casos a 0/24, y el success rate
-> subió de 12% (baseline) a 50% (con el fix). **Pendiente**: experimentos 1
-> (ventana de historial) y 2 (prompting).
+> subió de 12% (baseline) a 50% (con el fix). A partir de ahí se iteró sobre
+> prompting + presupuesto de historial/pasos (experimentos 1 y 2, línea de
+> tiempo completa en `resumen-informe-m3.md`); la mejor corrida encontrada
+> hasta ahora es `long-prompt-estado-t5-h-100-i-100` — **78% de éxito global
+> sobre 40 casos** (5 trials × 8 escenarios), ver sección 4 más abajo.
 
 ## 1. Aproximación
 
@@ -368,6 +371,89 @@ escenario con cautela, no como una mejora limpia y uniforme:
   para que el experimento midiera lo que dice medir, pero también
   encareció bastante la corrida — un costo real a tener en cuenta antes de
   correr los experimentos 1 y 2 con `max_iterations` alto.
+
+### Mejor corrida encontrada: prompt largo con registro de estado explícito (`long-prompt-estado-t5-h-100-i-100`)
+
+Tras el fix de la sección anterior, se corrieron variantes combinando
+`max_history_messages`/`max_iterations` más altos con un `system_prompt`
+progresivamente más largo (línea de tiempo completa, corrida por corrida,
+en `resumen-informe-m3.md`). Los fallos dominantes en esa serie fueron
+`accion_repetida_fallida` y `perdida_de_mapa_multi_sala`: el agente ya
+tenía presupuesto de pasos, pero perdía el hilo del estado en escenarios
+multi-sala y repetía acciones que ya habían fallado. La última iteración
+del prompt (`prompts/long_prompt_estado.txt`) agrega una sección explícita
+de **registro de estado** ("mantené una lista de salas visitadas/objetos
+resueltos", "antes de cada `go`, repasá esa lista", "si estás repitiendo
+una acción que ya falló, detenete y probá otra distinta") apuntada
+directamente a esos dos modos de fallo.
+
+```
+python eval/run.py --scenarios all --trials 5 \
+    --label long-prompt-estado-t5-h-100-i-100 \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado.txt
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 8 escenarios × 5 trials = 40 casos,
+4886.6s total. Es la corrida con más trials por escenario de toda la serie
+(5 en vez de 3), así que su número es también el más confiable frente al
+ruido de un LLM no determinístico.
+
+| Escenario | Dificultad | Trials | Success rate | Calls (media/óptimo) | Eficiencia | Paso medio de meta (éxitos) | Tokens in/out (media) | Latencia media (s) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| study-with-key | easy | 5 | 100% | 6.2 / 3 | 0.50 | 5.0 | 19077/325 | 8.3 |
+| color-locks | medium | 5 | 80% | 34.6 / 11 | 0.51 | 18.2 | 245261/2317 | 81.0 |
+| library-search | hard | 5 | 100% | 34.4 / 7 | 0.36 | 16.2 | 410370/1605 | 76.2 |
+| extreme-archive | extreme | 5 | 100% | 23.8 / 4 | 0.17 | 23.4 | 245517/1786 | 59.0 |
+| apartment-keys | medium | 5 | 80% | 33.4 / 7 | 0.37 | 16.8 | 171955/1938 | 70.2 |
+| office-sequence | hard | 5 | 100% | 100.6 / 13 | 0.13 | 23.0 | 632453/4859 | 249.3 |
+| vault-combination | extreme | 5 | 20% | 108.4 / 21 | 0.29 | 29.0 | 563692/5029 | 239.7 |
+| backtracking-vault | extreme | 5 | 40% | 72.6 / 18 | 0.34 | 31.5 | 446202/4176 | 193.4 |
+| **TOTAL** | — | 40 | **78%** | — | — | — | — | — |
+
+Modos de fallo (solo casos fallidos, 9/40):
+
+| Categoría | apartment-keys | backtracking-vault | color-locks | vault-combination | Total |
+|---|---:|---:|---:|---:|---:|
+| `accion_repetida_fallida` | 1 | 3 | 1 | 3 | 8 |
+| `max_iterations_agotado` | 1 | 3 | 1 | 4 | 9 |
+| `perdida_de_mapa_multi_sala` | 1 | 2 | — | 3 | 6 |
+
+**Lectura:**
+
+- **6 de 8 escenarios al 100% o cerca** (`study-with-key`, `library-search`,
+  `extreme-archive` y `office-sequence` en 100%; `color-locks` y
+  `apartment-keys` en 80%). En particular `office-sequence` (goal
+  `sequence`, el caso que el enunciado plantea como "planner explícito vs.
+  ReAct puro") y `extreme-archive` (diseñado para desbordar el contexto)
+  quedan resueltos siempre — el registro de estado explícito más el
+  presupuesto de pasos alcanza para sostener ambos, sin necesitar un
+  planner separado.
+- **`vault-combination` es el peor resultado de toda la serie (20%)**, y
+  `backtracking-vault` tampoco pasa de 40%. Son justamente los dos
+  escenarios `extreme` con la cadena de dependencias más profunda (cerradura
+  multi-item, salidas gated, backtracking obligatorio). Sus fallos siguen
+  concentrados en `accion_repetida_fallida` y `perdida_de_mapa_multi_sala`
+  (9 de las 17 marcas de fallo entre ambos) pese a que el prompt les pide
+  explícitamente lo contrario — instruir al modelo a llevar un registro de
+  estado no alcanza cuando el estado real a trackear (3 núcleos combinables
+  entre 3 salas, o una llave final que desbloquea el cofre de la primera
+  sala) excede lo que el modelo sostiene de forma confiable en contexto.
+- **No es gratis.** Es, con diferencia, la corrida más cara de la serie:
+  `office-sequence` promedia 632k tokens de entrada y 249s de latencia por
+  caso (vs. 46.7k/47s en la corrida post-fix de `max_iterations=100` sin
+  prompt largo, sección anterior) para pasar de 33% a 100% de éxito.
+  `vault-combination` gasta un promedio similar de tokens (563k) sin
+  llegar a un resultado bueno (20%) — evidencia de que, para los dos
+  escenarios más profundos, el cuello de botella ya no es presupuesto ni
+  prompt, sino la capacidad del modelo de sostener ese estado en contexto.
+- **Frente a la corrida previamente mejor** (`long-prompt-hist-100` en
+  `resumen-informe-m3.md`, 83% pero sobre solo 3 trials y con
+  `max_history_messages=200`), esta corrida usa menos historial (100) y más
+  trials (5), y da un número algo más bajo (78%) pero más confiable — la
+  diferencia es consistente con varianza de muestra chica más que con una
+  regresión real, dado que además resuelve escenarios (`office-sequence`,
+  `extreme-archive`) que aquella corrida no llevaba al 100%.
 
 ## 5. Resultados
 
