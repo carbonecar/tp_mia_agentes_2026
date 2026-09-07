@@ -32,7 +32,7 @@ from mia_world.scenarios import list_scenarios  # noqa: E402
 from mia_world.state import Scenario  # noqa: E402
 
 from eval import failure_modes, metrics  # noqa: E402
-from eval.runner import run_suite  # noqa: E402
+from eval.runner import AGENT_MODES, run_suite  # noqa: E402
 
 DEFAULT_SCENARIOS_DIR = Path(__file__).resolve().parent.parent / "scenarios"
 DEFAULT_OUT_DIR = Path(__file__).resolve().parent / "results"
@@ -82,6 +82,8 @@ class EvalArgs:
     max_iterations: int | None
     system_prompt: str | None
     system_prompt_file: str | None
+    planner: bool
+    agent_mode: str
     judge: bool
 
     @classmethod
@@ -103,6 +105,27 @@ class EvalArgs:
             default=None,
             help="path a un .txt con el system prompt (p. ej. prompts/baseline_prompt.txt).",
         )
+        parser.add_argument(
+            "--planner",
+            action="store_true",
+            help=(
+                "activa la fase de planificación explícita (`MyAgent(planner=True)`): "
+                "antes de la primera respuesta, el agente descompone el objetivo en "
+                "sub-metas ordenadas vía `structured_call` (experimento 'planner "
+                "explícito vs. ReAct puro')."
+            ),
+        )
+        parser.add_argument(
+            "--agent-mode",
+            choices=AGENT_MODES,
+            default="flat",
+            help=(
+                "'flat' (default): un único agente decide look/examine/take/use/go. "
+                "'subagent': el agente solo decide take/use/go y delega look/examine "
+                "en un sub-agente 'explorador' aparte, vía la tool `explorar_sala` "
+                "(experimento de delegación de tools)."
+            ),
+        )
         parser.add_argument("--judge", action="store_true", help="corre además el juez cualitativo (LLM-as-judge) por caso — costo extra.")
         ns = parser.parse_args(argv)
         return cls(**vars(ns))
@@ -123,6 +146,8 @@ def _build_config(args: EvalArgs) -> dict[str, Any]:
         if not path.is_file():
             raise SystemExit(f"No existe el archivo de system prompt: {path}")
         config["system_prompt"] = path.read_text(encoding="utf-8").strip()
+    if args.planner:
+        config["planner"] = True
     return config
 
 def _build_judge_agent(args: EvalArgs) -> Any:
@@ -165,28 +190,48 @@ def main(argv: list[str] | None = None) -> int:
         case_path = out_dir / f"case_{case['scenario']}_t{case['trial']}.json"
         case_path.write_text(json.dumps(case, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    cases = run_suite(scenarios, module_name=args.module, config=config, trials=args.trials, on_case=on_case)
+    cases = run_suite(
+        scenarios,
+        module_name=args.module,
+        config=config,
+        trials=args.trials,
+        agent_mode=args.agent_mode,
+        on_case=on_case,
+    )
 
     elapsed = time.monotonic() - t0
     summary = metrics.aggregate(cases)
     failure_summary = failure_modes.summarize(cases)
+    explorer_cost_summary = metrics.aggregate_explorer_cost(cases)
 
     summary_json = {
         "label": args.label,
         "module": args.module,
         "config": config,
+        "agent_mode": args.agent_mode,
         "trials_per_scenario": args.trials,
         "wall_clock_seconds_total": elapsed,
         "metrics": summary,
         "failure_modes": failure_summary,
+        "explorer_cost": explorer_cost_summary,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary_json, indent=2, ensure_ascii=False), encoding="utf-8")
 
+    explorer_cost_line = (
+        f"\ncosto oculto del sub-agente explorador (no incluido en `input_tokens`/`output_tokens` de arriba): "
+        f"{explorer_cost_summary['total_calls']} llamadas, "
+        f"{explorer_cost_summary['total_input_tokens']} tokens de entrada, "
+        f"{explorer_cost_summary['total_output_tokens']} tokens de salida.\n"
+        if explorer_cost_summary is not None
+        else ""
+    )
+
     markdown = (
         f"## Resultados — `{args.label}`\n\n"
-        f"config: `{config or '(default)'}` · módulo: `{args.module}` · "
+        f"config: `{config or '(default)'}` · agent_mode: `{args.agent_mode}` · módulo: `{args.module}` · "
         f"{len(scenarios)} escenarios x {args.trials} trials · {elapsed:.1f}s total\n\n"
-        f"{metrics.to_markdown_table(summary)}\n\n"
+        f"{metrics.to_markdown_table(summary)}\n"
+        f"{explorer_cost_line}\n"
         f"### Modos de fallo\n\n{failure_modes.summary_to_markdown_table(failure_summary)}\n"
     )
     (out_dir / "summary.md").write_text(markdown, encoding="utf-8")

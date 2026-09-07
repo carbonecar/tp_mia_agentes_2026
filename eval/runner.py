@@ -20,6 +20,10 @@ from mia_world.goals import check_goal
 from mia_world.state import Scenario, World
 from mia_world.tools import make_world_tools
 
+from student_framework.tools.explorer_subagent import make_explorer_tool
+
+AGENT_MODES = ("flat", "subagent")
+
 
 def _instrument_goal_progress(agent: Any, world: World, goal: dict[str, Any]) -> dict[str, Any]:
     """Envuelve *todas* las tools ya registradas en `agent` para detectar en qué
@@ -62,25 +66,73 @@ def _instrument_goal_progress(agent: Any, world: World, goal: dict[str, Any]) ->
     return progress
 
 
+def _register_world_tools(agent: Any, world: World, agent_mode: str) -> dict[str, Any] | None:
+    """Registra las tools del mundo sobre `agent` según `agent_mode`.
+
+    - `"flat"` (default, comportamiento original): las 4-5 tools del mundo
+      (`look`/`examine`/`take`/`use`[/`go`]) se registran directas — un
+      único agente decide todo.
+    - `"subagent"` (experimento M3 de framework, no de prompt/iteraciones):
+      `look`/`examine` NO se registran en `agent`; en su lugar se registra
+      `explorar_sala`, que delega en un sub-agente 'explorador' aparte (ver
+      `student_framework.tools.explorer_subagent`). `agent` (el "actor")
+      solo decide entre `take`/`use`/`go` y volver a consultar al
+      explorador.
+
+    Devuelve el `cost_sink` del explorador (o `None` en modo `"flat"`) para
+    que `run_case` pueda reportar el costo oculto de las llamadas del
+    sub-agente, que `AgentResult` del actor no contabiliza (ver docstring
+    de `mia_agents.types.AgentResult` y de `make_explorer_tool`).
+    """
+    if agent_mode not in AGENT_MODES:
+        raise ValueError(f"agent_mode debe ser uno de {AGENT_MODES}, no {agent_mode!r}.")
+
+    world_tools = {schema.name: (fn, schema) for fn, schema in make_world_tools(world)}
+
+    if agent_mode == "flat":
+        for fn, schema in world_tools.values():
+            agent.register_tool(fn, schema)
+        return None
+
+    # agent_mode == "subagent"
+    cost_sink: dict[str, Any] = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+    explorer_fn, explorer_schema = make_explorer_tool(
+        agent._llm,  # noqa: SLF001 — reusamos el mismo cliente LLM que el actor, no uno nuevo
+        world_tools["look"],
+        world_tools["examine"],
+        world,
+        cost_sink=cost_sink,
+    )
+    agent.register_tool(explorer_fn, explorer_schema)
+    for name in ("take", "use", "go"):
+        if name in world_tools:
+            fn, schema = world_tools[name]
+            agent.register_tool(fn, schema)
+    return cost_sink
+
+
 def run_case(
     scenario: Scenario,
     *,
     module_name: str = "student_framework",
     config: dict[str, Any] | None = None,
     trial: int = 0,
+    agent_mode: str = "flat",
 ) -> dict[str, Any]:
     """Corre el agente una vez sobre `scenario` y captura entrada/salida/estado.
 
     `scenario.initial_world` se copia (`copy.deepcopy`) antes de cada corrida:
     las tools del mundo mutan el `World` en sitio, así que reusar la misma
     instancia entre trials contaminaría el estado inicial de los siguientes.
+
+    `agent_mode` selecciona la arquitectura de tools (ver
+    `_register_world_tools`): `"flat"` (default) o `"subagent"`.
     """
     module = importlib.import_module(module_name) # esto es una mugre pero no se como hacerlo mejor porque viene ya mal desde el framework del tp
     world = copy.deepcopy(scenario.initial_world)
 
     agent = module.build_agent(dict(config or {}))
-    for fn, schema in make_world_tools(world):
-        agent.register_tool(fn, schema)
+    explorer_cost = _register_world_tools(agent, world, agent_mode)
     progress = _instrument_goal_progress(agent, world, scenario.goal)
 
     start = time.monotonic()
@@ -112,6 +164,8 @@ def run_case(
         "agent_result": asdict(result) if result is not None else None,
         "run_error": run_error,
         "event_log": list(world.event_log),
+        "agent_mode": agent_mode,
+        "explorer_cost": explorer_cost,
     }
 
 
@@ -121,6 +175,7 @@ def run_suite(
     module_name: str = "student_framework",
     config: dict[str, Any] | None = None,
     trials: int = 1,
+    agent_mode: str = "flat",
     on_case: Callable[[dict[str, Any]], None] | None = None,
 ) -> list[dict[str, Any]]:
     """Corre `trials` repeticiones de cada escenario. Devuelve la lista de casos.
@@ -128,11 +183,14 @@ def run_suite(
     `on_case` es un callback opcional invocado tras cada caso individual —
     útil para imprimir progreso en corridas largas/pagas contra un proveedor
     real, sin acoplar este módulo a ninguna forma de logging en particular.
+
+    `agent_mode` se reenvía a `run_case` (ver `_register_world_tools`):
+    `"flat"` (default) o `"subagent"`.
     """
     cases: list[dict[str, Any]] = []
     for scenario in scenarios:
         for trial in range(trials):
-            case = run_case(scenario, module_name=module_name, config=config, trial=trial)
+            case = run_case(scenario, module_name=module_name, config=config, trial=trial, agent_mode=agent_mode)
             cases.append(case)
             if on_case is not None:
                 on_case(case)

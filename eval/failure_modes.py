@@ -12,6 +12,7 @@ from typing import Any
 
 RUN_EXCEPTION = "excepcion_no_capturada"
 LLM_ERROR = "fallo_llm_no_transitorio"
+CYCLE_ESCALATION_ABORTED = "ciclo_escalado_abortado"
 MAX_ITERATIONS_EXHAUSTED = "max_iterations_agotado"
 HALLUCINATED_TOOL_CALL = "tool_call_alucinado"
 WORLD_TOOL_ARGUMENT_ERROR = "argumento_invalido_tool_mundo"
@@ -111,8 +112,17 @@ def classify_failure(case: dict[str, Any]) -> list[str]:
     categories: list[str] = []
 
     if agent_result.get("error"):
-        # Fallo transitorio del LLM que agotó `max_llm_retries` dentro de run().
-        categories.append(LLM_ERROR)
+        if (agent_result.get("error") or "").startswith("Se cortó la ejecución:"):
+            # `MyAgent.run` cortó proactivamente porque la misma acción/ciclo
+            # quedó bloqueada por `_is_looping` demasiadas veces seguidas sin
+            # que se ejecutara ninguna tool real en el medio (ver
+            # `max_blocked_repeats` en student_framework/agent.py) — no es un
+            # fallo del LLM ni del proveedor, es la escalada deliberada de la
+            # detección de ciclos.
+            categories.append(CYCLE_ESCALATION_ABORTED)
+        else:
+            # Fallo transitorio del LLM que agotó `max_llm_retries` dentro de run().
+            categories.append(LLM_ERROR)
 
     # `run()` solo devuelve `answer == ""` al agotar `max_iterations` sin una
     # respuesta final de texto (ver student_framework/agent.py). Es la señal

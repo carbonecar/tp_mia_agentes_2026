@@ -1,0 +1,560 @@
+<title>Instalación de los Tres Núcleos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --stone: #34373d;
+    --stone-deep: #23252a;
+    --stone-line: #40434a;
+    --glow: #f0b95f;
+    --ink: #ece7d8;
+    --muted: #888c94;
+    --panel: #1c1d21;
+    --danger: #c96b5c;
+    --ok: #8fae7c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--stone-deep);
+    color: var(--ink);
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    display: flex;
+    justify-content: center;
+    padding: clamp(20px, 4vw, 48px) 16px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 880px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+  .eyebrow .scn { flex: 1 1 auto; }
+  .eyebrow .goal { color: var(--glow); }
+
+  .stage {
+    background: var(--stone);
+    background-image: radial-gradient(ellipse 420px 220px at 50% -40px, rgba(240,185,95,0.14), transparent 70%);
+    border-radius: 6px;
+    padding: 20px;
+    min-height: 300px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 30px 60px -25px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .exits { display: flex; flex-wrap: wrap; gap: 8px; }
+  .exit-btn {
+    appearance: none;
+    border: 1px solid var(--stone-line);
+    background: var(--stone-deep);
+    color: var(--ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    padding: 7px 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .exit-btn:hover { border-color: var(--glow); color: var(--glow); }
+  .exit-btn:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+  .exit-btn .tile-lock { color: var(--muted); }
+
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .tile {
+    flex: 0 0 auto;
+    width: 156px;
+    min-height: 62px;
+    border: none;
+    border-radius: 6px;
+    background: var(--tile, var(--stone-line));
+    color: var(--stone-deep);
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    transition: filter 120ms ease;
+  }
+  .tile:hover { filter: brightness(1.08); }
+  .tile:active { filter: brightness(0.92); }
+  .tile:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+  .tile-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+  .tile-lock { align-self: flex-end; color: var(--stone-deep); opacity: 0.75; }
+  .tile.locked { opacity: 0.88; }
+  .tile.opened { filter: brightness(0.72) saturate(0.7); }
+
+  .drawer {
+    flex-basis: 100%;
+    background: var(--stone-deep);
+    border: 1px solid var(--stone-line);
+    border-radius: 6px;
+    padding: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .drawer-empty {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    padding: 8px 10px;
+  }
+  .drawer-row { display: flex; }
+  .drawer-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .drawer-btn:hover { background: var(--stone); color: var(--glow); }
+  .drawer-btn:focus-visible { outline: 2px solid var(--glow); outline-offset: -2px; }
+  .caret { color: var(--muted); font-size: 10px; }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 18px 20px;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .panel .who {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .panel .msg {
+    font-size: 17px;
+    line-height: 1.55;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .panel .msg.ok { color: var(--ok); font-style: normal; font-weight: 500; }
+  .panel .msg.warn { color: var(--danger); }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--stone-line);
+    background: var(--stone);
+    color: var(--muted);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .btn:hover { color: var(--ink); border-color: var(--glow); }
+  .btn:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+
+  .inventory { display: flex; align-items: center; gap: 8px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .inventory .label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .slots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .slot { width: 28px; height: 28px; border-radius: 4px; background: var(--stone); border: 1px solid var(--stone-line); display: flex; align-items: center; justify-content: center; }
+  .slot.empty { opacity: 0.35; }
+  .chip { width: 13px; height: 13px; border-radius: 50%; background: var(--chip, var(--muted)); display: block; }
+
+  .note {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--muted);
+    border-top: 1px solid var(--stone-line);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+  .note code { color: var(--muted); font-family: inherit; }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">
+    <span class="scn">M3 · mia_world · 07-extreme-vault-combination — vault-combination (extreme)</span>
+    <span id="roomTag"></span>
+    <span class="goal" id="goalTag"></span>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <div class="panel">
+    <span class="who" id="panelWho">—</span>
+    <span class="msg" id="panelMsg"></span>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="resetBtn" type="button">Reiniciar</button>
+    <div class="inventory">
+      <span class="label">Inventario</span>
+      <div class="slots" id="slots"></div>
+    </div>
+  </div>
+
+  <div class="note">Prototipo de interfaz generado desde <code>scenarios/07-extreme-vault-combination.json</code> — motor genérico basado en el JSON del escenario, sin arte pintado a mano.</div>
+</div>
+
+<script>
+(function () {
+  var SCENARIO = {"id": "vault-combination", "difficulty": "extreme", "description": "Una instalación de cinco salas. La puerta principal es un panel que solo abre cuando se le colocan TRES núcleos de energía, repartidos en salas distintas. Uno de los núcleos está en un depósito tras una puerta cerrada (la llave está en el taller), y otro en una vitrina cerrada (la llave está en el depósito). Hay que recorrer todas las salas, encadenar llaves entre salas y volver al vestíbulo a combinar las tres piezas.", "user_message": "Te despiertas en el vestíbulo de una instalación. La puerta principal no tiene cerradura común: es un panel con tres ranuras etiquetadas para 'núcleos de energía'. No hay ningún núcleo a la vista aquí. Un pasillo lleva al resto de la instalación. Tendrás que encontrar los tres núcleos —están en salas distintas— y traerlos al panel. Algunas puertas y vitrinas están cerradas y sus llaves no están donde las necesitás.", "start_room": "vestibulo", "rooms": {"vestibulo": {"name": "Vestíbulo", "description": "Un vestíbulo de hormigón con un panel de seguridad junto a la puerta principal. El panel tiene tres ranuras vacías rotuladas 'NÚCLEO'. Un pasillo se abre al norte.", "items": ["puerta_principal"], "exits": {"norte": "galeria"}}, "galeria": {"name": "Galería central", "description": "Una galería que distribuye hacia varias salas: el taller al este, la biblioteca al oeste y, al norte, una puerta metálica de depósito que está cerrada.", "items": ["puerta_deposito"], "exits": {"sur": "vestibulo", "este": "taller", "oeste": "biblioteca", "norte": "deposito"}, "locked_exits": {"norte": "puerta_deposito"}}, "taller": {"name": "Taller", "description": "Un taller con un banco de herramientas lleno de cajones. Huele a aceite y metal.", "items": ["banco_herramientas"], "exits": {"oeste": "galeria"}}, "biblioteca": {"name": "Biblioteca", "description": "Una sala con estanterías y una vitrina de cristal cerrada con llave en el centro.", "items": ["vitrina"], "exits": {"este": "galeria"}}, "deposito": {"name": "Depósito", "description": "Un depósito frío con un cajón de seguridad metálico contra la pared.", "items": ["cajon_deposito"], "exits": {"sur": "galeria"}}}, "items": {"puerta_principal": {"name": "puerta principal", "description": "Una puerta blindada controlada por un panel de tres ranuras. Solo abre cuando se colocan los tres núcleos de energía.", "locked": {"requires_items": ["nucleo_rojo", "nucleo_azul", "nucleo_verde"]}, "open_state": "closed"}, "puerta_deposito": {"name": "puerta del depósito", "description": "Una puerta metálica con una cerradura robusta. Cerrada.", "locked": {"requires_item": "llave_deposito"}, "open_state": "closed"}, "banco_herramientas": {"name": "banco de herramientas", "description": "Un banco con varios cajones. Al abrirlos encontrás piezas sueltas.", "container": true, "contains": ["nucleo_rojo", "llave_deposito", "destornillador"]}, "nucleo_rojo": {"name": "núcleo rojo", "description": "Un núcleo de energía con carcasa roja. Encaja en el panel del vestíbulo.", "takeable": true, "hidden_by": "banco_herramientas"}, "llave_deposito": {"name": "llave del depósito", "description": "Una llave robusta con una etiqueta que dice 'DEPÓSITO'.", "takeable": true, "hidden_by": "banco_herramientas"}, "destornillador": {"name": "destornillador", "description": "Un destornillador común. No parece abrir nada importante.", "takeable": true, "hidden_by": "banco_herramientas"}, "cajon_deposito": {"name": "cajón de seguridad", "description": "Un cajón metálico. Se abre con un tirón y dentro hay piezas.", "container": true, "contains": ["nucleo_verde", "llave_vitrina"]}, "nucleo_verde": {"name": "núcleo verde", "description": "Un núcleo de energía con carcasa verde. Encaja en el panel del vestíbulo.", "takeable": true, "hidden_by": "cajon_deposito"}, "llave_vitrina": {"name": "llave de la vitrina", "description": "Una llave pequeña y fina, de las de vitrina de exposición.", "takeable": true, "hidden_by": "cajon_deposito"}, "vitrina": {"name": "vitrina", "description": "Una vitrina de cristal cerrada con llave. Dentro se ve un núcleo azul.", "container": true, "contains": ["nucleo_azul"], "locked": {"requires_item": "llave_vitrina"}, "open_state": "closed"}, "nucleo_azul": {"name": "núcleo azul", "description": "Un núcleo de energía con carcasa azul. Encaja en el panel del vestíbulo.", "takeable": true, "hidden_by": "vitrina"}}, "goal": {"type": "item_open", "item": "puerta_principal"}};
+  var ITEMS = SCENARIO.items;
+  var ROOMS = SCENARIO.rooms;
+  var PALETTE = ['#c9ced6', '#b8493f', '#4f7d5c', '#3f6f92', '#d6a94a', '#8a7ab5', '#4a9088', '#b57a4a'];
+  var DOOR_COLOR = '#6b5a4a';
+  var DIR_LABEL = { norte: 'Norte', sur: 'Sur', este: 'Este', oeste: 'Oeste' };
+  var LOCK_SVG = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><rect x="2" y="4.3" width="6" height="4.4" rx="1" fill="currentColor"/><path d="M3.1 4.3V3a1.9 1.9 0 0 1 3.8 0v1.3" fill="none" stroke="currentColor" stroke-width="1"/></svg>';
+
+  var currentRoom, inventory, opened, expanded, gameOver, totalTakeable;
+
+  var stageEl = document.getElementById('stage');
+  var panelWho = document.getElementById('panelWho');
+  var panelMsg = document.getElementById('panelMsg');
+  var roomTag = document.getElementById('roomTag');
+  var goalTag = document.getElementById('goalTag');
+  var slotsEl = document.getElementById('slots');
+  var resetBtn = document.getElementById('resetBtn');
+
+  function colorFor(id) {
+    var h = 0;
+    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return PALETTE[h % PALETTE.length];
+  }
+
+  function meetsLock(locked, inv) {
+    if (!locked) return true;
+    var need = locked.requires_items || (locked.requires_item ? [locked.requires_item] : []);
+    return need.every(function (id) { return inv.indexOf(id) !== -1; });
+  }
+
+  function missingNames(locked, inv) {
+    var need = locked.requires_items || (locked.requires_item ? [locked.requires_item] : []);
+    return need.filter(function (id) { return inv.indexOf(id) === -1; }).map(function (id) { return ITEMS[id].name; });
+  }
+
+  function say(who, text, cls) {
+    panelWho.textContent = who;
+    panelMsg.textContent = text;
+    panelMsg.className = 'msg' + (cls ? ' ' + cls : '');
+  }
+
+  function take(id) {
+    if (inventory.indexOf(id) === -1) inventory.push(id);
+    renderInventory();
+  }
+
+  function countTakeable() {
+    var n = 0;
+    Object.keys(ITEMS).forEach(function (id) { if (ITEMS[id].takeable) n++; });
+    return n;
+  }
+
+  function renderInventory() {
+    slotsEl.innerHTML = '';
+    for (var i = 0; i < totalTakeable; i++) {
+      var slot = document.createElement('div');
+      var id = inventory[i];
+      slot.className = 'slot' + (id ? '' : ' empty');
+      if (id) {
+        slot.title = ITEMS[id].name;
+        slot.style.setProperty('--chip', colorFor(id));
+        var chip = document.createElement('span');
+        chip.className = 'chip';
+        slot.appendChild(chip);
+      }
+      slotsEl.appendChild(slot);
+    }
+  }
+
+  function goalLabel() {
+    if (SCENARIO.goal.type === 'sequence') {
+      return 'objetivo: ' + SCENARIO.goal.goals.map(function (g) {
+        return (g.type === 'item_in_inventory' ? 'llevar ' : 'abrir ') + ITEMS[g.item].name;
+      }).join(' → ');
+    }
+    return 'objetivo: abrir ' + ITEMS[SCENARIO.goal.item].name;
+  }
+
+  function subgoalSatisfied(g) {
+    if (g.type === 'item_in_inventory') return inventory.indexOf(g.item) !== -1;
+    if (g.type === 'item_open') return !!opened[g.item];
+    return false;
+  }
+
+  function win(itemId) {
+    gameOver = true;
+    goalTag.textContent = 'objetivo cumplido';
+    say(ITEMS[itemId].name, 'Lo lograste. Escenario resuelto.', 'ok');
+  }
+
+  function fail(itemId, text) {
+    gameOver = true;
+    goalTag.textContent = 'objetivo fallido';
+    say(ITEMS[itemId].name, text, 'warn');
+  }
+
+  function checkGoalAfterOpen(id) {
+    if (SCENARIO.goal.type === 'item_open') {
+      if (id === SCENARIO.goal.item) win(id);
+      return;
+    }
+    var goals = SCENARIO.goal.goals;
+    var idx = -1;
+    goals.forEach(function (g, i) { if (g.type === 'item_open' && g.item === id) idx = i; });
+    if (idx === -1) return;
+    var priorOk = goals.slice(0, idx).every(subgoalSatisfied);
+    if (priorOk) win(id);
+    else fail(id, 'Se abre y se sella detrás tuyo. Te faltaba algo antes de abrirla.');
+  }
+
+  function openDoor(id) {
+    var item = ITEMS[id];
+    if (opened[id]) { say(item.name, 'Ya está abierta.'); return true; }
+    if (!meetsLock(item.locked, inventory)) {
+      say(item.name, item.description + ' Te falta: ' + missingNames(item.locked, inventory).join(', ') + '.', 'warn');
+      return false;
+    }
+    opened[id] = true;
+    say(item.name, item.description + ' Se abre.', 'ok');
+    checkGoalAfterOpen(id);
+    return true;
+  }
+
+  function interact(id) {
+    if (gameOver) return;
+    var item = ITEMS[id];
+    if (item.container) {
+      if (item.locked && !opened[id]) {
+        if (!meetsLock(item.locked, inventory)) {
+          say(item.name, item.description + ' Está cerrado.', 'warn');
+          return;
+        }
+        opened[id] = true;
+        expanded[id] = true;
+        say(item.name, item.description + ' Se abre.', 'ok');
+      } else {
+        expanded[id] = !expanded[id];
+        say(item.name, item.description);
+      }
+      renderRoom();
+      return;
+    }
+    if (item.locked !== undefined) {
+      openDoor(id);
+      renderRoom();
+      return;
+    }
+    if (item.takeable) {
+      if (inventory.indexOf(id) !== -1) { say(item.name, 'Ya lo tenés.'); return; }
+      take(id);
+      say(item.name, item.description + ' Lo guardás.', 'ok');
+      renderRoom();
+      return;
+    }
+    say(item.name, item.description);
+  }
+
+  function buildTile(id) {
+    var item = ITEMS[id];
+    if (item.takeable && inventory.indexOf(id) !== -1) return null;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tile';
+    var isDoor = item.locked !== undefined && !item.container;
+    btn.style.setProperty('--tile', isDoor ? DOOR_COLOR : colorFor(id));
+    if (item.locked && !opened[id]) btn.classList.add('locked');
+    if ((item.container || isDoor) && opened[id]) btn.classList.add('opened');
+
+    var name = document.createElement('span');
+    name.className = 'tile-name';
+    name.textContent = item.name;
+    btn.appendChild(name);
+
+    if (item.locked && !opened[id]) {
+      var lock = document.createElement('span');
+      lock.className = 'tile-lock';
+      lock.innerHTML = LOCK_SVG;
+      btn.appendChild(lock);
+    }
+
+    btn.addEventListener('click', function () { interact(id); });
+    return btn;
+  }
+
+  function buildDrawer(containerId, depth) {
+    var item = ITEMS[containerId];
+    var wrap = document.createElement('div');
+    wrap.className = 'drawer';
+    var contains = (item.contains || []).filter(function (childId) {
+      var child = ITEMS[childId];
+      return !(child.takeable && inventory.indexOf(childId) !== -1);
+    });
+    if (!contains.length) {
+      var empty = document.createElement('div');
+      empty.className = 'drawer-empty';
+      empty.textContent = 'Vacío.';
+      wrap.appendChild(empty);
+      return wrap;
+    }
+    contains.forEach(function (childId) {
+      var child = ITEMS[childId];
+      var row = document.createElement('div');
+      row.className = 'drawer-row';
+      row.style.paddingLeft = (depth * 14) + 'px';
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'drawer-btn';
+      var label = document.createElement('span');
+      label.textContent = child.name;
+      btn.appendChild(label);
+      if (child.container) {
+        var caret = document.createElement('span');
+        caret.className = 'caret';
+        caret.textContent = expanded[childId] ? '▾' : '▸';
+        btn.appendChild(caret);
+      }
+      btn.addEventListener('click', function () { interact(childId); });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+
+      if (child.container && expanded[childId]) {
+        wrap.appendChild(buildDrawer(childId, depth + 1));
+      }
+    });
+    return wrap;
+  }
+
+  function buildExit(dir, targetId) {
+    var room = ROOMS[currentRoom];
+    var lockedItemId = room.locked_exits && room.locked_exits[dir];
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'exit-btn';
+    var label = document.createElement('span');
+    label.textContent = DIR_LABEL[dir] + ' → ' + ROOMS[targetId].name;
+    btn.appendChild(label);
+    if (lockedItemId && !opened[lockedItemId]) {
+      var lock = document.createElement('span');
+      lock.className = 'tile-lock';
+      lock.innerHTML = LOCK_SVG;
+      btn.appendChild(lock);
+    }
+    btn.addEventListener('click', function () { tryExit(dir); });
+    return btn;
+  }
+
+  function tryExit(dir) {
+    if (gameOver) return;
+    var room = ROOMS[currentRoom];
+    var lockedItemId = room.locked_exits && room.locked_exits[dir];
+    if (lockedItemId && !opened[lockedItemId]) {
+      if (!openDoor(lockedItemId)) return;
+    }
+    currentRoom = room.exits[dir];
+    renderRoom(true);
+  }
+
+  function renderRoom(entering) {
+    var room = ROOMS[currentRoom];
+    roomTag.textContent = room.name;
+    stageEl.innerHTML = '';
+
+    var exitDirs = Object.keys(room.exits || {});
+    if (exitDirs.length) {
+      var exitsRow = document.createElement('div');
+      exitsRow.className = 'exits';
+      exitDirs.forEach(function (dir) { exitsRow.appendChild(buildExit(dir, room.exits[dir])); });
+      stageEl.appendChild(exitsRow);
+    }
+
+    var grid = document.createElement('div');
+    grid.className = 'grid';
+    room.items.forEach(function (id) {
+      var tile = buildTile(id);
+      if (!tile) return;
+      grid.appendChild(tile);
+      var item = ITEMS[id];
+      if (item.container && opened[id] && expanded[id]) {
+        grid.appendChild(buildDrawer(id, 1));
+      }
+    });
+    stageEl.appendChild(grid);
+
+    if (entering) say(room.name, room.description);
+  }
+
+  function reset() {
+    currentRoom = SCENARIO.start_room;
+    inventory = [];
+    opened = {};
+    expanded = {};
+    gameOver = false;
+    totalTakeable = countTakeable();
+    goalTag.textContent = goalLabel();
+    renderInventory();
+    renderRoom(true);
+  }
+
+  resetBtn.addEventListener('click', reset);
+  reset();
+})();
+</script>

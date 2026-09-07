@@ -1,0 +1,57 @@
+{
+  "scenario": "study-with-key",
+  "difficulty": "easy",
+  "trial": 2,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": true,
+  "goal_reason": "puerta principal está abierta",
+  "goal_achieved_at_step": 3,
+  "wall_clock_seconds": 32.90501724998467,
+  "agent_result": {
+    "answer": "<thinking>La puerta principal ya estaba abierta, lo que significa que he logrado salir del estudio.</thinking>\n\n",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "<thinking>La puerta principal tiene una cerradura dorada. Debo resumir toda la información recopilada.</thinking>\n\nSala: Estudio\nSalidas: ninguna\nObjetos visibles: alfombra (cerrado); escritorio (abierto); puerta principal (cerrada por cerradura)\nContenedores revelados: alfombra: llave_oro\nCerraduras: puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_oro\"}",
+        "tool_output": "Tomas llave dorada.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Usas llave dorada con puerta principal. Se abre.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "puerta principal ya está abierta.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 12984,
+    "output_tokens": 233
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:estudio",
+    "take:llave_oro",
+    "open:puerta_principal"
+  ],
+  "agent_mode": "subagent",
+  "explorer_cost": {
+    "calls": 1,
+    "input_tokens": 5548,
+    "output_tokens": 302
+  }
+}

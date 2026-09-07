@@ -1,0 +1,631 @@
+{
+  "scenario": "library-search",
+  "difficulty": "hard",
+  "trial": 1,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 123.64746908299276,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "(el explorador no devolvió ningún resumen; puede haber agotado sus pasos)",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"estanteria\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 543384,
+    "output_tokens": 4364
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:biblioteca"
+  ],
+  "agent_mode": "subagent",
+  "explorer_cost": {
+    "calls": 1,
+    "input_tokens": 4074,
+    "output_tokens": 375
+  }
+}

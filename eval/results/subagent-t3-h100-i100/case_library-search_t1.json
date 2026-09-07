@@ -1,0 +1,631 @@
+{
+  "scenario": "library-search",
+  "difficulty": "hard",
+  "trial": 1,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 138.2621681659948,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "(el explorador no devolvió ningún resumen; puede haber agotado sus pasos)",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"estanteria\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_2\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_2'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_3\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_3'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_4\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_4'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_5\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_5'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_6\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_6'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_7\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_7'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"volumen_8\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'volumen_8'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"cajon_escritorio\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'cajon_escritorio'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 560937,
+    "output_tokens": 4855
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:biblioteca"
+  ],
+  "agent_mode": "subagent",
+  "explorer_cost": {
+    "calls": 1,
+    "input_tokens": 11704,
+    "output_tokens": 507
+  }
+}

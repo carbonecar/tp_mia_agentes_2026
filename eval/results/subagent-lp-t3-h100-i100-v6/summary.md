@@ -1,0 +1,28 @@
+## Resultados — `subagent-lp-t3-h100-i100-v6`
+
+config: `{'max_history_messages': 100, 'max_iterations': 100, 'system_prompt': 'Sos un agente que resuelve escape rooms textuales. Recibís una situación inicial y debés\nescapar (o cumplir el objetivo indicado) usando únicamente las herramientas disponibles:\n`look`, `examine`, `take`, `use`, y `go` (esta última solo si hay salidas entre salas).\n\nReglas del mundo:\n- Los objetos tienen un `id` interno (p. ej. "llave_oro") que debés usar tal cual en las\n  llamadas a herramientas, no el nombre en lenguaje natural.\n- Muchos objetos son contenedores: podés no ver su contenido hasta examinarlos. Si un\n  contenedor está cerrado con llave, primero hay que abrirlo con `use`.\n- Algunos objetos están ocultos dentro de otros (p. ej. una llave bajo una alfombra, o\n  dentro de un cofre). No vas a poder tomarlos hasta examinar el contenedor que los oculta.\n- Las cerraduras pueden requerir un único ítem específico, o varias piezas distintas que\n  hay que colocar una por una con `use` antes de que se abran del todo — `examine` te dice\n  cuántas piezas faltan.\n- En escenarios con varias salas, `look` te muestra las salidas disponibles y si alguna\n  está bloqueada por una puerta/reja sin abrir. Movete con `go` usando la dirección exacta.\n- No asumas la estructura del mundo de antemano: explorá con `look` y `examine` antes de\n  actuar, y confirmá el efecto de cada acción con el texto que devuelve la herramienta.\n\nRegistro de estado (obligatorio en escenarios con varias salas):\n- Mantené en tu propio razonamiento una lista explícita de las salas que ya visitaste, qué\n  objetos viste en cada una, cuáles ya examinaste/tomaste y cuáles seguís sin resolver\n  (p. ej. un contenedor cerrado del que todavía no tenés la llave). No confíes en\n  recordarlo implícitamente: antes de cada acción, repasá esa lista.\n- Antes de moverte con `go`, repasá si ya visitaste la sala de destino y qué encontraste\n  ahí. No vuelvas a un lugar ya vaciado (todo examinado, todo tomable ya tomado, ningún\n  contenedor pendiente) a menos que tengas una razón nueva y concreta para hacerlo — por\n  ejemplo, un ítem nuevo en tu inventario que podría servir con algo que viste ahí antes.\n- Si notás que estás repitiendo un camino o una acción que ya probaste sin éxito, es señal\n  de que perdiste el hilo del estado: detenete, repasá tu lista de salas/objetos, y elegí\n  una acción distinta a la que ya intentaste — no repitas la misma secuencia esperando un\n  resultado distinto.\n\nEstrategia:\n1. Empezá siempre con `look` para ver la sala, los objetos visibles y las salidas.\n2. Examiná cada objeto de interés (`examine`) antes de intentar tomarlo o usarlo — revela\n   contenido oculto y objetos escondidos.\n3. Tomá (`take`) todo objeto tomable relevante en cuanto sea visible.\n4. Usá (`use`) los objetos del inventario sobre cerraduras, puertas o contenedores cerrados\n   probando la combinación más lógica según nombres/colores/descripciones.\n5. Si una acción falla (mensaje de error), no la repitas igual: reinterpretá la pista y\n   probá otra combinación u objeto.\n6. Si hay varias salas, explorá metódicamente. Antes de cada `go`, repasá tu registro de\n   estado: si ya visitaste esa sala y ya no tiene nada pendiente, no vuelvas sin una razón\n   nueva; si hace falta volver sobre tus pasos porque una puerta se desbloqueó desde otro\n   lado, hacelo, pero verbalizá por qué (qué cambió que ahora sí justifica volver).\n7. Seguí explorando y combinando objetos hasta lograr el objetivo (normalmente abrir la\n   puerta principal, aunque puede ser llegar a una sala, tener un ítem específico, o\n   cumplir varias condiciones en un orden determinado).\n\nNo inventes objetos ni acciones que no existan: si algo no aparece en `look`/`examine`, no\nexiste todavía. No declares el escenario resuelto en tu respuesta final hasta haber\nconfirmado el efecto (p. ej. "Se abre") en el resultado de una herramienta.'}` · agent_mode: `subagent` · módulo: `student_framework` · 8 escenarios x 3 trials · 1565.6s total
+
+| Escenario | Dificultad | Trials | Success rate | Calls (media/óptimo) | Eficiencia | Paso medio de meta (éxitos) | Tokens in/out (media) | Latencia media (s) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| study-with-key | easy | 3 | 100% | 3.7 / 3 | 0.83 | 3.0 | 12137/223 | 56.9 |
+| color-locks | medium | 3 | 67% | 16.0 / 11 | 0.71 | 17.5 | 65843/2658 | 68.0 |
+| library-search | hard | 3 | 0% | 49.7 / 7 | 0.22 | — | 265675/3370 | 70.9 |
+| extreme-archive | extreme | 3 | 33% | 51.0 / 4 | 0.21 | 45.0 | 532170/3541 | 94.9 |
+| apartment-keys | medium | 3 | 100% | 13.0 / 7 | 0.56 | 13.0 | 46227/723 | 23.9 |
+| office-sequence | hard | 3 | 67% | 44.7 / 13 | 0.55 | 17.0 | 321615/2615 | 74.2 |
+| vault-combination | extreme | 3 | 33% | 46.7 / 21 | 0.51 | 41.0 | 279541/2721 | 87.5 |
+| backtracking-vault | extreme | 3 | 33% | 27.3 / 18 | 0.67 | 23.0 | 127393/1569 | 45.2 |
+| **TOTAL** | — | 24 | **54%** | — | — | — | — | — |
+
+costo oculto del sub-agente explorador (no incluido en `input_tokens`/`output_tokens` de arriba): 101 llamadas, 623216 tokens de entrada, 34166 tokens de salida.
+
+### Modos de fallo
+
+| Categoría | backtracking-vault | color-locks | extreme-archive | library-search | office-sequence | vault-combination | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| accion_repetida_fallida | 2 | 1 | 2 | 3 | 1 | 2 | 11 |
+| argumento_invalido_tool_mundo | — | — | 1 | — | — | — | 1 |
+| ciclo_escalado_abortado | 2 | — | 1 | 3 | — | 2 | 8 |
+| desborde_de_contexto | — | — | 1 | — | — | — | 1 |
+| max_iterations_agotado | — | — | 1 | — | 1 | — | 2 |
+| perdida_de_mapa_multi_sala | — | — | — | — | 1 | 1 | 2 |

@@ -14,7 +14,7 @@ import json
 import time
 from typing import Any, Callable
 
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from mia_agents.protocols import LLMClient
 from mia_agents.tool_schema import FINAL_RESULT_TOOL_NAME, final_result_tool_schema
@@ -23,6 +23,35 @@ from mia_agents.types import AgentResult, AgentStep, ToolSchema
 
 class StructuredOutputError(RuntimeError):
     """Se agotaron los reintentos de reparación en `structured_call`."""
+
+
+# Marca fija del mensaje sintético que `run()` deja en `AgentStep.error`
+# cuando `_is_looping` bloquea un intento (ver ambos). Sirve para que
+# `_is_looping` pueda filtrar sus propios bloqueos previos al mirar el
+# historial — un paso bloqueado no ejecutó nada de verdad, así que no debe
+# contar como "el mismo resultado de siempre" ni tampoco como "algo
+# distinto que rompe el ciclo": simplemente se ignora, como si no hubiera
+# pasado, y se sigue mirando la última ejecución real.
+_LOOP_BLOCKED_MARKER = "ya forma parte de un patrón que se repitió sin variar"
+
+
+class _Plan(BaseModel):
+    """Salida estructurada de la fase de planificación (`planner=True`).
+
+    Reutiliza `structured_call` (ya construido para M2) en vez de un
+    mecanismo nuevo: la única pieza de framework agregada es *cuándo* se
+    dispara esta llamada y qué se hace con el resultado (sección "Modo
+    planner" de `run`).
+    """
+
+    subgoals: list[str] = Field(
+        min_length=1,
+        description=(
+            "Lista ordenada de 3 a 8 sub-metas concretas y verificables (no "
+            "acciones sueltas de una tool, sino hitos intermedios) que hay "
+            "que cumplir en ese orden para lograr el objetivo."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +116,10 @@ class MyAgent:
         max_llm_retries: int = 3,
         max_tool_retries: int = 2,
         retry_backoff_seconds: float = 0.05,
+        planner: bool = False,
+        max_consecutive_repeats: int = 2,
+        max_cycle_period: int = 8,
+        max_blocked_repeats: int = 5,
     ) -> None:
         """Inicializa el agente.
 
@@ -109,6 +142,44 @@ class MyAgent:
             Reintentos ante fallos transitorios de una herramienta.
         retry_backoff_seconds : float
             Backoff lineal entre reintentos (segundos).
+        planner : bool
+            Si es `True`, la primera llamada a `run` antepone una fase de
+            planificación explícita (ver `_plan_subgoals`) antes de entrar
+            al bucle ReAct habitual: el mensaje de usuario efectivo queda
+            aumentado con una lista de sub-metas ordenadas. Experimento M3
+            "planner explícito vs. ReAct puro" (ver `INFORME_M3.md`).
+        max_consecutive_repeats : int
+            Cuántas veces seguidas se permite repetir el mismo *ciclo* de
+            tools (de cualquier período entre 1 y `max_cycle_period`) antes
+            de bloquear que se repita una vez más (ver `_is_looping`).
+            Detección de ciclos: encontrado en la práctica que un agente
+            puede quedar 90+ pasos repitiendo exactamente la misma acción
+            sin variarla (`REENTREGA.md`, sección 5); con período 1
+            (`max_cycle_period=1`) eso es justo lo que se corta, pero un
+            agente también puede repetir un *bloque* de varias acciones
+            distintas en el mismo orden (p. ej. re-examinar la misma lista
+            de objetos una y otra vez, sección 5.2) — en vez de esperar a
+            que el modelo se dé cuenta solo (el prompt ya se lo pide
+            explícitamente y no alcanza), el framework corta la repetición
+            él mismo, para cualquier período detectado.
+        max_cycle_period : int
+            Período más largo de ciclo que `_is_looping` revisa (1 = solo
+            una acción idéntica consecutiva; hasta este valor cubre
+            bloques de varias acciones distintas repetidas en el mismo
+            orden). Mismo criterio que
+            `eval/failure_modes._has_unproductive_room_cycle` usa para
+            navegación entre salas, generalizado acá a cualquier tool.
+        max_blocked_repeats : int
+            Cuántas veces seguidas se tolera que `_is_looping` bloquee un
+            intento (sin que se ejecute ninguna tool real de por medio)
+            antes de cortar `run` directamente. Encontrado en la práctica
+            (`REENTREGA.md`, sección 5.4): bloquear un intento no obliga al
+            modelo a cambiar de estrategia — un caso real insistió con la
+            misma acción ya bloqueada 86 veces seguidas hasta agotar
+            `max_iterations`, sin ejecutar una sola tool real en el medio.
+            El contador se reinicia en cuanto una tool se ejecuta de verdad
+            (sin bloqueo); solo cuenta bloqueos *consecutivos* sin ninguna
+            ejecución real entre medio.
         """
         self._llm = llm_client
         self._system = system_prompt
@@ -117,6 +188,11 @@ class MyAgent:
         self._max_llm_retries = max_llm_retries
         self._max_tool_retries = max_tool_retries
         self._retry_backoff_seconds = retry_backoff_seconds
+        self._planner = planner
+        self._planned = False
+        self._max_consecutive_repeats = max_consecutive_repeats
+        self._max_cycle_period = max_cycle_period
+        self._max_blocked_repeats = max_blocked_repeats
 
         self._tools: dict[str, Callable[..., str]] = {}
         self._schemas: dict[str, ToolSchema] = {}
@@ -217,6 +293,69 @@ class MyAgent:
                     raise
                 time.sleep(self._retry_backoff_seconds * attempts)
 
+    def _is_looping(self, steps: list[AgentStep], name: str, arguments_json: str) -> bool:
+        """True si ejecutar `(name, arguments_json)` ahora repetiría, una vez
+        más, un ciclo de resultados idénticos que ya se vio
+        `max_consecutive_repeats` veces seguidas.
+
+        Generaliza a cualquier período de 1 a `max_cycle_period`, no solo
+        una acción idéntica repetida (período 1): un agente puede repetir
+        un *bloque* de varias acciones distintas en el mismo orden (p. ej.
+        re-examinar la misma lista de objetos una y otra vez, ver
+        `REENTREGA.md` sección 5.2).
+
+        **Compara `(tool_name, tool_input, tool_output, error)` de los pasos
+        ya ejecutados, no solo `(tool_name, tool_input)`** — la primera
+        versión de este método solo miraba la llamada, asumiendo que
+        "misma tool + mismos argumentos ⇒ mismo resultado" en este mundo
+        determinístico. Eso es cierto para tools de solo lectura
+        (`examine`), pero **no** para `go`: dos `go(direction="sur")`
+        seguidos pueden ser legítimos y dar resultados distintos si cada
+        uno te deja en una sala distinta (backtracking por una cadena
+        lineal de salas, exactamente lo que pide `backtracking-vault` por
+        diseño) — encontrado en la práctica bloqueando ese caso real
+        (`REENTREGA.md`, sección 5.7). Exigir que los pasos ya ejecutados
+        tengan además el *mismo resultado* entre sí antes de bloquear el
+        intento actual corrige eso: si el resultado cambió entre llamadas
+        idénticas, hay progreso real y no se bloquea; si no cambió, sí se
+        bloquea, como antes.
+
+        Solo se exige el resultado en los pasos *ya ejecutados* del ciclo
+        (`max_consecutive_repeats` copias completas del bloque de período
+        `p`); el intento actual todavía no tiene resultado, así que se
+        compara únicamente por `(tool_name, tool_input)` contra lo que el
+        ciclo ya visto predice como próxima llamada.
+
+        Los pasos que ya fueron bloqueados por este mismo mecanismo
+        (`_LOOP_BLOCKED_MARKER` en su `error`) se excluyen del historial
+        antes de buscar el patrón: no son una ejecución real, así que no
+        deben "romper" un ciclo genuino ni contar como parte de él —
+        sin este filtro, el primer bloqueo cambia la firma del paso
+        siguiente (`tool_output=None` en vez del resultado real) y el
+        intento *después* de un bloqueo dejaba de verse como parte del
+        ciclo, permitiendo que se re-ejecutara la tool real una vez más
+        antes de volver a bloquear (oscilando en vez de bloquear de forma
+        sostenida).
+        """
+        history = [
+            (s.tool_name, s.tool_input, s.tool_output, s.error)
+            for s in steps
+            if not (s.tool_output is None and s.error and _LOOP_BLOCKED_MARKER in s.error)
+        ]
+        n = self._max_consecutive_repeats
+        for period in range(1, self._max_cycle_period + 1):
+            block_len = period * n
+            if len(history) < block_len:
+                continue
+            tail = history[-block_len:]
+            cycle = tail[:period]
+            if not all(tail[i] == cycle[i % period] for i in range(block_len)):
+                continue
+            expected_name, expected_args, _, _ = cycle[0]
+            if name == expected_name and arguments_json == expected_args:
+                return True
+        return False
+
     def _execute_tool(self, name: str, arguments_json: str) -> tuple[str | None, str | None]:
         """Ejecuta una tool registrada. Devuelve `(tool_output, error)`.
 
@@ -247,6 +386,41 @@ class MyAgent:
                 return None, str(exc)
 
     # ------------------------------------------------------------------
+    # Modo planner (M3, experimento "planner explícito vs. ReAct puro")
+    # ------------------------------------------------------------------
+
+    def _plan_subgoals(self, user_message: str) -> str:
+        """Pide un plan de sub-metas vía `structured_call` y lo antepone al
+        mensaje de usuario original.
+
+        Aislado de `self._history` (mismo mecanismo que `structured_call`
+        siempre usa) para que la fase de planificación no contamine el
+        historial que después ve el bucle ReAct con una conversación
+        distinta a la que el usuario mandó. Si el planner no logra producir
+        un plan válido (`StructuredOutputError`, p. ej. el modelo no coopera
+        tras los reintentos de reparación), se degrada a ReAct puro sobre el
+        mensaje original en vez de romper `run`.
+        """
+        plan_prompt = (
+            "Sos un planner. No ejecutes ninguna acción vos mismo: tu único trabajo "
+            "es descomponer el siguiente objetivo en una lista ordenada de sub-metas "
+            "concretas y verificables, en el orden en que un agente ejecutor debería "
+            f"perseguirlas.\n\nObjetivo: {user_message}"
+        )
+        try:
+            plan = self.structured_call(plan_prompt, _Plan)
+        except StructuredOutputError:
+            return user_message
+
+        plan_text = "\n".join(f"{i}. {sg}" for i, sg in enumerate(plan.subgoals, start=1))
+        return (
+            f"{user_message}\n\n"
+            "Plan de sub-metas sugerido (perseguilas en este orden salvo que lo que "
+            "vayas descubriendo indique lo contrario):\n"
+            f"{plan_text}"
+        )
+
+    # ------------------------------------------------------------------
     # Bucle principal
     # ------------------------------------------------------------------
 
@@ -259,7 +433,16 @@ class MyAgent:
         `max_history_messages` y siempre conserva el último mensaje de
         usuario. Los tokens reportados por cada `LLMResponse` de esta
         llamada a `run` se acumulan en el `AgentResult` devuelto.
+
+        M3 (`planner=True`): antes de la primera llamada de una conversación,
+        el mensaje de usuario efectivo se aumenta con un plan de sub-metas
+        (ver `_plan_subgoals`). Solo ocurre una vez por instancia: llamadas
+        sucesivas a `run` sobre la misma conversación no vuelven a planificar.
         """
+        if self._planner and not self._planned:
+            self._planned = True
+            user_message = self._plan_subgoals(user_message)
+
         self._history.append({"role": "user", "content": user_message})
         self._last_user_index = len(self._history) - 1
 
@@ -267,6 +450,7 @@ class MyAgent:
         input_tokens: int | None = None
         output_tokens: int | None = None
         tools = list(self._schemas.values()) if self._schemas else None
+        consecutive_blocks = 0
 
         for _ in range(self._max_iterations):
             messages = self._windowed_messages()
@@ -305,7 +489,21 @@ class MyAgent:
             )
 
             for tool_call in response.tool_calls:
-                tool_output, error = self._execute_tool(tool_call.name, tool_call.arguments)
+                looping = self._is_looping(steps, tool_call.name, tool_call.arguments)
+                if looping:
+                    consecutive_blocks += 1
+                    tool_output = None
+                    error = (
+                        f"'{tool_call.name}' con estos argumentos ({tool_call.arguments}) "
+                        f"{_LOOP_BLOCKED_MARKER} en los últimos pasos "
+                        "(la misma acción, o el mismo bloque de acciones, en el mismo orden) — el "
+                        "resultado va a ser igual, no se ejecutó de nuevo. No lo repitas: cambiá "
+                        "de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de "
+                        "seguir."
+                    )
+                else:
+                    consecutive_blocks = 0
+                    tool_output, error = self._execute_tool(tool_call.name, tool_call.arguments)
                 steps.append(
                     AgentStep(
                         tool_name=tool_call.name,
@@ -321,6 +519,24 @@ class MyAgent:
                         "content": tool_output if error is None else error,
                     }
                 )
+
+                if looping and consecutive_blocks > self._max_blocked_repeats:
+                    # Bloquear el intento no obligó al modelo a cambiar de estrategia:
+                    # siguió pidiendo la misma acción/ciclo ya bloqueado. Cortar acá en
+                    # vez de agotar `max_iterations` insistiendo con algo que ya
+                    # sabemos que no va a ejecutarse (ver REENTREGA.md, sección 5.4/5.5).
+                    return AgentResult(
+                        answer="",
+                        steps=steps,
+                        error=(
+                            f"Se cortó la ejecución: la misma acción o ciclo de acciones quedó "
+                            f"bloqueado por detección de ciclos {consecutive_blocks} veces seguidas "
+                            "sin que el agente cambiara de estrategia ni se ejecutara ninguna tool "
+                            "real en el medio."
+                        ),
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                    )
 
         return AgentResult(answer="", steps=steps, input_tokens=input_tokens, output_tokens=output_tokens)
 

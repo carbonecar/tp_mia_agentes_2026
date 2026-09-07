@@ -1,0 +1,155 @@
+{
+  "label": "flat-default-prompt-t3-h100-i100",
+  "module": "student_framework",
+  "config": {
+    "max_history_messages": 100,
+    "max_iterations": 100
+  },
+  "agent_mode": "flat",
+  "trials_per_scenario": 3,
+  "wall_clock_seconds_total": 2017.0404646670213,
+  "metrics": {
+    "overall": {
+      "trials_total": 24,
+      "success_rate": 0.5416666666666666,
+      "mean_efficiency_ratio": 0.470903940779353,
+      "mean_input_tokens": 331117.75,
+      "mean_output_tokens": 3307.5416666666665,
+      "mean_wall_clock_seconds": 84.0329235034175
+    },
+    "by_scenario": {
+      "study-with-key": {
+        "difficulty": "easy",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 5,
+        "optimal_calls": 3,
+        "mean_efficiency_ratio": 0.6,
+        "mean_steps_to_goal": 5,
+        "mean_real_efficiency_ratio": 0.6,
+        "mean_input_tokens": 10049.666666666666,
+        "mean_output_tokens": 333.6666666666667,
+        "mean_wall_clock_seconds": 4.701393194690657
+      },
+      "color-locks": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 11.333333333333334,
+        "optimal_calls": 11,
+        "mean_efficiency_ratio": 1.2527777777777778,
+        "mean_steps_to_goal": 20,
+        "mean_real_efficiency_ratio": 0.55,
+        "mean_input_tokens": 28935.666666666668,
+        "mean_output_tokens": 791.6666666666666,
+        "mean_wall_clock_seconds": 10.512180583338099
+      },
+      "library-search": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 12.333333333333334,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.7583333333333333,
+        "mean_steps_to_goal": 16,
+        "mean_real_efficiency_ratio": 0.4375,
+        "mean_input_tokens": 48733.333333333336,
+        "mean_output_tokens": 1199.3333333333333,
+        "mean_wall_clock_seconds": 13.925565305321166
+      },
+      "extreme-archive": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 49.666666666666664,
+        "optimal_calls": 4,
+        "mean_efficiency_ratio": 0.12222222222222222,
+        "mean_steps_to_goal": 24.5,
+        "mean_real_efficiency_ratio": 0.16333333333333333,
+        "mean_input_tokens": 977785.6666666666,
+        "mean_output_tokens": 6710,
+        "mean_wall_clock_seconds": 120.61802238868161
+      },
+      "apartment-keys": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 43.333333333333336,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.3582615629984051,
+        "mean_steps_to_goal": 15,
+        "mean_real_efficiency_ratio": 0.5023923444976076,
+        "mean_input_tokens": 184605.33333333334,
+        "mean_output_tokens": 2226.3333333333335,
+        "mean_wall_clock_seconds": 48.91759859700687
+      },
+      "office-sequence": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 102,
+        "optimal_calls": 13,
+        "mean_efficiency_ratio": 0.12750746503221752,
+        "mean_steps_to_goal": 25,
+        "mean_real_efficiency_ratio": 0.5336617405582923,
+        "mean_input_tokens": 522943.6666666667,
+        "mean_output_tokens": 4903.333333333333,
+        "mean_wall_clock_seconds": 220.8702261389893
+      },
+      "vault-combination": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.0,
+        "mean_tool_calls_used": 136.33333333333334,
+        "optimal_calls": 21,
+        "mean_efficiency_ratio": 0.3209863077280111,
+        "mean_steps_to_goal": null,
+        "mean_real_efficiency_ratio": null,
+        "mean_input_tokens": 367097.6666666667,
+        "mean_output_tokens": 4788.666666666667,
+        "mean_wall_clock_seconds": 141.55797704163706
+      },
+      "backtracking-vault": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.3333333333333333,
+        "mean_tool_calls_used": 85.33333333333333,
+        "optimal_calls": 18,
+        "mean_efficiency_ratio": 0.22714285714285715,
+        "mean_steps_to_goal": 46,
+        "mean_real_efficiency_ratio": 0.391304347826087,
+        "mean_input_tokens": 508791,
+        "mean_output_tokens": 5507.333333333333,
+        "mean_wall_clock_seconds": 111.16042477767526
+      }
+    }
+  },
+  "failure_modes": {
+    "se_detuvo_sin_lograr_la_meta": {
+      "color-locks": 2,
+      "library-search": 1,
+      "vault-combination": 1
+    },
+    "max_iterations_agotado": {
+      "extreme-archive": 1,
+      "apartment-keys": 1,
+      "office-sequence": 1,
+      "vault-combination": 2,
+      "backtracking-vault": 2
+    },
+    "desborde_de_contexto": {
+      "extreme-archive": 1
+    },
+    "accion_repetida_fallida": {
+      "apartment-keys": 1,
+      "office-sequence": 1,
+      "vault-combination": 2,
+      "backtracking-vault": 2
+    },
+    "perdida_de_mapa_multi_sala": {
+      "apartment-keys": 1,
+      "vault-combination": 1
+    }
+  },
+  "explorer_cost": null
+}
