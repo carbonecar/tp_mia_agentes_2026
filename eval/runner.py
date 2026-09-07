@@ -12,9 +12,11 @@ from __future__ import annotations
 
 import copy
 import importlib
+import signal
 import time
+from contextlib import contextmanager
 from dataclasses import asdict
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 from mia_world.goals import check_goal
 from mia_world.state import Scenario, World
@@ -23,6 +25,70 @@ from mia_world.tools import make_world_tools
 from student_framework.tools.explorer_subagent import make_explorer_tool
 
 AGENT_MODES = ("flat", "subagent")
+
+# Prefijo fijo del mensaje de `run_error` cuando `_case_time_limit` corta un
+# caso — `eval/failure_modes.py` lo usa para distinguir esto de una excepción
+# real del agente (`RUN_EXCEPTION`). Deliberadamente NO contiene la palabra
+# "timeout" (ver docstring de `_case_time_limit`).
+CASE_TIMEOUT_PREFIX = "Caso abortado por límite de tiempo:"
+
+
+class CaseDeadlineExceeded(Exception):
+    """Un caso individual (`run_case`) superó `case_timeout_seconds` sin terminar `agent.run()`."""
+
+
+@contextmanager
+def _case_time_limit(seconds: float | None) -> Iterator[None]:
+    """Levanta `CaseDeadlineExceeded` si el bloque `with` no termina en `seconds`.
+
+    Harness de evaluación agregado tras un incidente real (ver
+    `INFORME_M3.md`, sección de subagentes): un caso quedó colgado contra el
+    proveedor de LLM y obligó a matar el proceso completo a mano, perdiendo
+    también los casos ya corridos que no se habían guardado todavía. Sin
+    esto, `agent.run()` no tiene ningún límite propio más allá de
+    `max_iterations` — que no ayuda si lo que tarda es una sola llamada de
+    red, no el número de pasos.
+
+    Implementado con `signal.setitimer(SIGALRM, ...)` en vez de un
+    hilo/proceso aparte: interrumpe también una llamada de red bloqueante (lo
+    que de hecho pasó), no solo un loop de Python que chequee un reloj.
+    Trade-off conocido y aceptado: solo funciona en el hilo principal y en
+    sistemas POSIX. Si no hay `SIGALRM` disponible (Windows) o `seconds` es
+    `None`, el caso corre sin límite, exactamente como antes de este cambio —
+    nunca rompe la corrida por no tener la señal disponible.
+
+    **Detalle no obvio, encontrado verificando con `MockLLMClient`**:
+    `student_framework/agent.py::_is_transient_error` clasifica un error
+    como transitorio si el texto de `f"{type(exc).__name__} {exc}"` (en
+    minúsculas) contiene marcadores como `"timeout"` — y si esta excepción
+    se llamara, por ejemplo, `CaseTimeoutError`, el solo *nombre de la
+    clase* ya haría match (`"casetimeouterror"` contiene `"timeout"` como
+    substring), sin importar qué diga el mensaje. Eso hacía que
+    `_chat_with_retry` reintentara la llamada al LLM en vez de dejar
+    propagar la excepción — el reintento interno del agente "se tragaba"
+    el corte de este harness (el caso terminaba igual, solo que más tarde
+    de lo pedido, sin que `run_case` viera nunca el corte). Por eso la
+    clase se llama `CaseDeadlineExceeded` y el mensaje evita también
+    "timeout"/"timed out": ninguno de los dos coincide con ningún marcador
+    de `_TRANSIENT_MARKERS`, así que `_is_transient_error` lo trata como
+    error permanente y se propaga (o, más precisamente, `MyAgent.run()` lo
+    atrapa como cualquier otro error permanente y lo vuelca en
+    `AgentResult.error` sin reintentar — ver más abajo).
+    """
+    if seconds is None or not hasattr(signal, "SIGALRM"):
+        yield
+        return
+
+    def _on_alarm(signum: int, frame: Any) -> None:
+        raise CaseDeadlineExceeded(f"{CASE_TIMEOUT_PREFIX} el caso no terminó dentro de {seconds}s.")
+
+    previous_handler = signal.signal(signal.SIGALRM, _on_alarm)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 def _instrument_goal_progress(agent: Any, world: World, goal: dict[str, Any]) -> dict[str, Any]:
@@ -118,6 +184,7 @@ def run_case(
     config: dict[str, Any] | None = None,
     trial: int = 0,
     agent_mode: str = "flat",
+    case_timeout_seconds: float | None = None,
 ) -> dict[str, Any]:
     """Corre el agente una vez sobre `scenario` y captura entrada/salida/estado.
 
@@ -127,6 +194,10 @@ def run_case(
 
     `agent_mode` selecciona la arquitectura de tools (ver
     `_register_world_tools`): `"flat"` (default) o `"subagent"`.
+
+    `case_timeout_seconds` (opcional) acota cuánto puede tardar este caso —
+    ver `_case_time_limit`. `None` (default) corre sin límite, como antes de
+    agregar este harness.
     """
     module = importlib.import_module(module_name) # esto es una mugre pero no se como hacerlo mejor porque viene ya mal desde el framework del tp
     world = copy.deepcopy(scenario.initial_world)
@@ -139,7 +210,10 @@ def run_case(
     run_error: str | None = None
     result = None
     try:
-        result = agent.run(scenario.user_message)
+        with _case_time_limit(case_timeout_seconds):
+            result = agent.run(scenario.user_message)
+    except CaseDeadlineExceeded as exc:
+        run_error = str(exc)
     except Exception as exc:
         # El contrato de `Agent.run` dice que nunca debería lanzar, pero un
         # caso de evaluación individual no debe abortar la corrida completa
@@ -176,6 +250,7 @@ def run_suite(
     config: dict[str, Any] | None = None,
     trials: int = 1,
     agent_mode: str = "flat",
+    case_timeout_seconds: float | None = None,
     on_case: Callable[[dict[str, Any]], None] | None = None,
 ) -> list[dict[str, Any]]:
     """Corre `trials` repeticiones de cada escenario. Devuelve la lista de casos.
@@ -186,11 +261,25 @@ def run_suite(
 
     `agent_mode` se reenvía a `run_case` (ver `_register_world_tools`):
     `"flat"` (default) o `"subagent"`.
+
+    `case_timeout_seconds` se reenvía a `run_case` (ver `_case_time_limit`):
+    si un caso se cuelga, este caso puntual se corta y se registra como
+    fallo (`run_error`), pero la suite sigue con el resto de los casos —
+    antes de este harness, un caso colgado obligaba a matar el proceso
+    entero y perder también los casos ya corridos que no se habían
+    volcado a disco todavía.
     """
     cases: list[dict[str, Any]] = []
     for scenario in scenarios:
         for trial in range(trials):
-            case = run_case(scenario, module_name=module_name, config=config, trial=trial, agent_mode=agent_mode)
+            case = run_case(
+                scenario,
+                module_name=module_name,
+                config=config,
+                trial=trial,
+                agent_mode=agent_mode,
+                case_timeout_seconds=case_timeout_seconds,
+            )
             cases.append(case)
             if on_case is not None:
                 on_case(case)

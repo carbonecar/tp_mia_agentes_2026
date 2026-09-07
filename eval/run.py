@@ -84,6 +84,7 @@ class EvalArgs:
     system_prompt_file: str | None
     planner: bool
     agent_mode: str
+    case_timeout_seconds: float | None
     judge: bool
 
     @classmethod
@@ -124,6 +125,18 @@ class EvalArgs:
                 "'subagent': el agente solo decide take/use/go y delega look/examine "
                 "en un sub-agente 'explorador' aparte, vía la tool `explorar_sala` "
                 "(experimento de delegación de tools)."
+            ),
+        )
+        parser.add_argument(
+            "--case-timeout-seconds",
+            type=float,
+            default=None,
+            help=(
+                "corta un caso individual si `agent.run()` no termina dentro de este "
+                "límite (harness de evaluación, ver `eval/runner.py::_case_time_limit`) "
+                "— el caso queda marcado como fallo (`caso_timeout_abortado`) pero la "
+                "suite sigue con el resto. Default: sin límite, como antes de este flag. "
+                "Solo tiene efecto en sistemas POSIX (usa SIGALRM)."
             ),
         )
         parser.add_argument("--judge", action="store_true", help="corre además el juez cualitativo (LLM-as-judge) por caso — costo extra.")
@@ -196,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
         config=config,
         trials=args.trials,
         agent_mode=args.agent_mode,
+        case_timeout_seconds=args.case_timeout_seconds,
         on_case=on_case,
     )
 
@@ -209,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
         "module": args.module,
         "config": config,
         "agent_mode": args.agent_mode,
+        "case_timeout_seconds": args.case_timeout_seconds,
         "trials_per_scenario": args.trials,
         "wall_clock_seconds_total": elapsed,
         "metrics": summary,
@@ -226,9 +241,11 @@ def main(argv: list[str] | None = None) -> int:
         else ""
     )
 
+    timeout_note = f" · case_timeout_seconds: `{args.case_timeout_seconds}`" if args.case_timeout_seconds is not None else ""
     markdown = (
         f"## Resultados — `{args.label}`\n\n"
-        f"config: `{config or '(default)'}` · agent_mode: `{args.agent_mode}` · módulo: `{args.module}` · "
+        f"config: `{config or '(default)'}` · agent_mode: `{args.agent_mode}` · módulo: `{args.module}`"
+        f"{timeout_note} · "
         f"{len(scenarios)} escenarios x {args.trials} trials · {elapsed:.1f}s total\n\n"
         f"{metrics.to_markdown_table(summary)}\n"
         f"{explorer_cost_line}\n"

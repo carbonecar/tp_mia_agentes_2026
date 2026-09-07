@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 RUN_EXCEPTION = "excepcion_no_capturada"
+CASE_TIMEOUT_ABORTED = "caso_timeout_abortado"
 LLM_ERROR = "fallo_llm_no_transitorio"
 CYCLE_ESCALATION_ABORTED = "ciclo_escalado_abortado"
 MAX_ITERATIONS_EXHAUSTED = "max_iterations_agotado"
@@ -102,6 +103,13 @@ def classify_failure(case: dict[str, Any]) -> list[str]:
         return []
 
     if case.get("run_error"):
+        if (case.get("run_error") or "").startswith("Caso abortado por límite de tiempo:"):
+            # `eval/runner.py::_case_time_limit` cortó este caso puntual
+            # porque `agent.run()` no terminó dentro de `case_timeout_seconds`
+            # — harness de evaluación, no un fallo del agente ni del
+            # proveedor. Se distingue de `RUN_EXCEPTION` para no mezclar
+            # "el agente violó su contrato" con "el caso tardó demasiado".
+            return [CASE_TIMEOUT_ABORTED]
         # El agente lanzó una excepción no capturada por su propio bucle
         # (viola el contrato de M1/M2 de nunca lanzar) — nada más es
         # diagnosticable de forma fiable a partir de acá.
@@ -112,7 +120,8 @@ def classify_failure(case: dict[str, Any]) -> list[str]:
     categories: list[str] = []
 
     if agent_result.get("error"):
-        if (agent_result.get("error") or "").startswith("Se cortó la ejecución:"):
+        error_text = agent_result.get("error") or ""
+        if error_text.startswith("Se cortó la ejecución:"):
             # `MyAgent.run` cortó proactivamente porque la misma acción/ciclo
             # quedó bloqueada por `_is_looping` demasiadas veces seguidas sin
             # que se ejecutara ninguna tool real en el medio (ver
@@ -120,6 +129,17 @@ def classify_failure(case: dict[str, Any]) -> list[str]:
             # fallo del LLM ni del proveedor, es la escalada deliberada de la
             # detección de ciclos.
             categories.append(CYCLE_ESCALATION_ABORTED)
+        elif error_text.startswith("Caso abortado por límite de tiempo:"):
+            # Mismo harness de la sección de `run_error` más arriba, pero
+            # interceptado un nivel más adentro: `MyAgent.run()` atrapa
+            # *cualquier* excepción de `_chat_with_retry` (contrato M1/M2 de
+            # nunca lanzar, ver agent.py línea ~459) y la vuelca acá como
+            # `AgentResult.error` en vez de dejarla propagar — así que el
+            # corte por `case_timeout_seconds` aparece típicamente acá, no en
+            # `run_error` (que queda para el caso, más raro, de que el corte
+            # ocurra en un punto del loop que `run()` no envuelve en
+            # try/except).
+            categories.append(CASE_TIMEOUT_ABORTED)
         else:
             # Fallo transitorio del LLM que agotó `max_llm_retries` dentro de run().
             categories.append(LLM_ERROR)
