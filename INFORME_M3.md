@@ -1,566 +1,1913 @@
 # Informe — Milestone 3
 
-> Estado: baseline y experimento 3 (`max_iterations`) corridos contra Bedrock
-> (`amazon.nova-lite-v1:0`). El experimento 3 destapó un bug real de la
-> ventana deslizante de M2 (ventana con `tool` huérfano — ver sección 4),
-> que se corrigió y **re-confirmó contra Bedrock**: el modo de fallo del bug
-> (`fallo_llm_no_transitorio`) pasó de 12/24 casos a 0/24, y el success rate
-> subió de 12% (baseline) a 50% (con el fix). A partir de ahí se iteró sobre
-> prompting + presupuesto de historial/pasos (experimentos 1 y 2, línea de
-> tiempo completa en `resumen-informe-m3.md`); la mejor corrida encontrada
-> hasta ahora es `long-prompt-estado-t5-h-100-i-100` — **78% de éxito global
-> sobre 40 casos** (5 trials × 8 escenarios), ver sección 4 más abajo.
+> **Estado actual.** Este documento reemplaza a `INFORME_M3.md` (versión
+> anterior), `resumen-informe-m3.md` y `REENTREGA.md` (los tres ya
+> eliminados del repo), unificados en un solo informe. Responde a la
+> devolución recibida sobre la entrega original de M3, que señaló tres
+> puntos:
+>
+> 1. El informe estaba corto de experimentos (solo uno terminado).
+> 2. No había avances significativos en el *framework* (memoria semántica,
+>    subagentes, planificación) — los experimentos se limitaban a prompt e
+>    iteraciones.
+> 3. Era confuso tener dos archivos de informe separados.
+>
+> Este documento resuelve los tres: agrega **planner explícito** y
+> **subagentes (delegación de tools)** como extensiones reales de
+> `student_framework/agent.py` (sección 4.3/4.4), agrega una tercera
+> extensión de framework encontrada en el camino —**detección de ciclos en
+> el loop del agente** (sección 4.5)—, y consolida todo en un único
+> documento con las 5 secciones que pide `ENUNCIADO_M3.md`.
+>
+> Todas las corridas contra proveedor real usan Bedrock
+> `amazon.nova-lite-v1:0`. Los números con `n=3` trials por escenario deben
+> leerse con cautela frente a la varianza de un LLM no determinístico —se
+> señala explícitamente cada vez que una lectura puntual no se pudo
+> confirmar con más muestra.
+
+## 0. Resumen de ejecución — cinco corridas completas: baseline + las cuatro arquitecturas con mapa
+
+Cinco comandos, cada uno corre el dataset completo (8 escenarios x 3
+trials = 24 casos), mismo presupuesto en los cinco
+(`--max-iterations 100 --max-history-messages 100`).
+
+El primero es el baseline `flat` de siempre, **sin** mapa
+(`prompts/long_prompt_estado.txt`, sin `--room-graph`) — mismo config que
+la mejor corrida `flat` ya documentada (sección 4.5, v7, 75%); correrlo
+de nuevo solo suma una muestra fresca a esa serie, no agrega nada nuevo
+al framework. **Ya corrido** (ver más abajo — el resultado real fue con
+mapa, sección 4.15, no este).
+
+Los otros cuatro corren cada arquitectura bajo `prompts/
+long_prompt_estado_mapa.txt` (el prompt que menciona `consultar_mapa`
+explícitamente, sección 1.3.5) más `--room-graph` (sin el flag, esa tool
+no existiría y el prompt se referiría a algo no disponible). Lo único que
+cambia entre estos cuatro es cómo se arma el agente — qué tools tiene
+disponibles para explorar, y si hay una fase previa al bucle ReAct — así
+que quedan directamente comparables entre sí.
+
+```bash
+# 1. flat, SIN mapa — baseline de siempre, prompt sin mencionar consultar_mapa.
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-baseline \
+  --max-iterations 100 --max-history-messages 100 \
+  --system-prompt-file prompts/long_prompt_estado.txt
+
+# 2. flat + mapa: un único agente decide look/examine/take/use/go
+# directamente, sin fase previa ni delegación, con el mapa garantizado
+# en cada `go`. YA CORRIDO — ver sección 4.15 (67%).
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-baseline-mapa \
+  --max-iterations 100 --max-history-messages 100 \
+  --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph
+
+# 3. planner + mapa: agrega una fase de planificación explícita antes del
+# bucle (`MyAgent(planner=True)`, sección 1.3.1) — el agente descompone el
+# objetivo en sub-metas ordenadas vía `structured_call` antes de actuar.
+# `--planner` es independiente de `--agent-mode`: sigue siendo un único
+# agente con las mismas tools que `flat`, solo cambia si planifica antes.
+python eval/run.py --scenarios all --trials 3 --label planner-t3-h100-i100-mapa \
+  --max-iterations 100 --max-history-messages 100 \
+  --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph \
+  --planner
+
+# 4. subagent + mapa: delega la exploración detallada de cada sala
+# (look/examine) a una tool separada, `explorar_sala` (sección 1.3.2) — el
+# agente principal solo decide take/use/go. `--agent-mode subagent` es lo
+# que cambia el registro de tools, a diferencia de `--planner`.
+python eval/run.py --scenarios all --trials 3 --label subagent-t3-h100-i100-mapa \
+  --max-iterations 100 --max-history-messages 100 \
+  --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph \
+  --agent-mode subagent
+
+# 5. adaptive + mapa: registra a la vez la ruta directa (look/examine) y
+# la delegada (explorar_sala) — `--agent-mode adaptive` — y una fase de
+# triage (`--adaptive`, `MyAgent(adaptive=True)`, sección 1.3.4) donde el
+# propio modelo decide, por escenario, cuál de las dos podar y si
+# conviene planificar. Combina la idea de `planner` (decidir si
+# planificar) con la de `subagent` (delegar exploración), pero la
+# decisión la toma el modelo caso por caso en vez de venir fija desde
+# afuera.
+python eval/run.py --scenarios all --trials 3 --label adaptive-t3-h100-i100-mapa \
+  --max-iterations 100 --max-history-messages 100 \
+  --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph \
+  --agent-mode adaptive --adaptive
+```
+
+**Las cinco ya se corrieron** (labels `-v8`, distintos de los `-mapa` sin
+sufijo de la sección 4.15 — quedan como muestra separada, no se
+promedian entre sí). Resultado agregado:
+
+| # | Corrida | Total (24 casos) |
+|---|---|---:|
+| 1 | `flat`, sin mapa | 67% (16/24) |
+| 2 | `flat` + mapa | 75% (18/24) |
+| 3 | `planner` + mapa | 58% (14/24) |
+| 4 | `subagent` + mapa | **79% (19/24)** — mejor de las cinco |
+| 5 | `adaptive` + mapa | **46% (11/24)** — peor de las cinco |
+
+Desglose por escenario:
+
+| Escenario | Dificultad | flat sin mapa | flat+mapa | planner+mapa | subagent+mapa | adaptive+mapa |
+|---|---|---:|---:|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% | 67% | 100% |
+| color-locks | medium | 100% | 67% | 33% | 100% | 100% |
+| library-search | hard | 67% | 100% | 67% | 100% | 67% |
+| extreme-archive | extreme | 100% | 100% | 67% | 100% | 67% |
+| apartment-keys | medium | 33% | 100% | 100% | 100% | 33% |
+| office-sequence | hard | 100% | 100% | 67% | 67% | 0% |
+| vault-combination | extreme | 33% | 0% | 0% | 0% | 0% |
+| backtracking-vault | extreme | 0% | 33% | 33% | 100% | 0% |
+| **TOTAL** | — | **67%** | **75%** | **58%** | **79%** | **46%** |
+
+Lectura, con la cautela de siempre a `n=3` por celda:
+
+- **`vault-combination` falla en las cinco arquitecturas** (0-33%), la
+  única fila sin ninguna excepción — apunta a algo específico de ese
+  escenario (o de su interacción con el mapa) más que a la arquitectura.
+  Consistente con `perdida_de_mapa_multi_sala` apareciendo ahí en 3 de
+  las 5 corridas (`flat` sin mapa, `flat`+mapa, `planner`+mapa — ver
+  `failure_modes` de cada una).
+- **`subagent` + mapa da el mejor total (79%)**, algo que contrasta con
+  las corridas de `subagent` sin mapa ya documentadas (sección 4.4),
+  bastante más volátiles (0%-67% según la corrida). Con `n=3` no alcanza
+  para atribuirlo al mapa específicamente — podría ser la misma varianza
+  de siempre cayendo del lado bueno esta vez — pero es la primera corrida
+  de toda la serie de mapa (4.8-4.15) donde `subagent` participa, así que
+  no hay una serie previa con la que promediar.
+- **`adaptive` + mapa vuelve a ser la peor (46%)**, en línea con el cierre
+  ya documentado de la capa adaptativa (secciones 4.6/4.7/4.10): el
+  triage sigue sin mejorar el resultado agregado, mapa incluido —
+  `ciclo_escalado_abortado` aparece en 4 de los 8 escenarios de esta
+  corrida, más que en cualquier otra arquitectura de la tabla.
+- **`flat` con mapa (75%) superó a `flat` sin mapa (67%) en esta muestra
+  puntual** — la primera vez en toda la serie de mapa (4.8-4.15) que
+  `flat` sin mapa y `flat` con mapa se corren *en la misma tanda*, como
+  par directo, en vez de comparar contra la referencia histórica de la
+  sección 4.5 (75%, corrida en otro momento). El total con mapa (88% →
+  71% → 62% → 67% → 75%) sigue moviéndose sin relación clara con cuánto
+  se usa la tool, así que este 75% no alcanza para revertir el cierre de
+  esa serie — son dos muestras de `n=3` por escenario corridas juntas por
+  primera vez, no una tendencia nueva.
+
+Ninguno de estos números cambia las conclusiones ya cerradas de las
+secciones 4.6-4.15 (capa adaptativa y `consultar_mapa`/mapa incondicional
+como resultados negativos) — se documentan acá como una muestra adicional
+de la matriz completa de arquitecturas, no como una re-apertura de esos
+experimentos.
+
+### 0.1 Principales features agregados desde el último tag de git (`M3_RELEASE`)
+
+Comparado contra el tag `M3_RELEASE` (la entrega original de M3, antes de
+la devolución que motivó esta reentrega), `student_framework/agent.py` no
+tenía ninguno de los mecanismos de la sección 1.3 — ni `planner`, ni
+`adaptive`, ni `_is_looping`, ni `remind_pending_failures`, ni
+`reflect_on_stall` — y `eval/runner.py`/`student_framework/__init__.py`
+no conocían `agent_mode`, `room_graph` ni ningún override más allá de los
+básicos de M1/M2 (verificado comparando `git show M3_RELEASE:...` contra
+el estado actual). Lo agregado desde entonces, en orden de aparición en
+la sección 1.3:
+
+1. **Planificación explícita** (`planner=True`, §1.3.1) — fase previa al
+   bucle ReAct que descompone el objetivo en sub-metas vía
+   `structured_call`.
+2. **Subagentes / delegación de tools** (`agent_mode="subagent"`, §1.3.2)
+   — la exploración (`look`/`examine`) se delega a una tool separada
+   `explorar_sala`, implementada en `student_framework/tools/
+   explorer_subagent.py` (archivo nuevo). `eval/metrics.py` gana
+   `aggregate_explorer_cost` para reportar el costo oculto de tokens del
+   sub-agente aparte del costo del agente principal.
+3. **Detección de ciclos en el bucle** (`_is_looping`, §1.3.3) —
+   generaliza a cualquier período de repetición (`max_cycle_period`),
+   escala a cortar la ejecución si el modelo insiste tras ser bloqueado
+   (`max_blocked_repeats`); nueva categoría de fallo
+   `ciclo_escalado_abortado` en `eval/failure_modes.py`.
+4. **Capa adaptativa** (`adaptive=True`, `agent_mode="adaptive"`, §1.3.4)
+   — el propio modelo decide, vía triage estructurado, si planificar y/o
+   delegar la exploración, podando la ruta no elegida.
+5. **`consultar_mapa` / mapa de navegación determinístico** (§1.3.5,
+   `student_framework/tools/room_graph.py`, archivo nuevo) — reconstruye
+   la topología conocida de salas sin pasar por el LLM; `--room-graph` la
+   registra, `wrap_go_with_map` la garantiza en cada `go` sin depender de
+   que el modelo la pida; prompt nuevo `prompts/
+   long_prompt_estado_mapa.txt` que la menciona explícitamente.
+6. **`remind_pending_failures`** (§1.3.6) — recordatorio transitorio de
+   fallos de tool aún no resueltos, para fallos repetidos no
+   consecutivos que `_is_looping` no cubre.
+7. **`reflect_on_stall`** (§1.3.7, el más reciente) — auto-diagnóstico
+   genérico vía LLM cuando pasan varios pasos sin ningún resultado nuevo,
+   sin depender de reconocer texto de error puntual.
+8. **Harness de evaluación** (`eval/runner.py`/`eval/run.py`): tope de
+   tiempo por caso (`--case-timeout-seconds`, `CaseDeadlineExceeded`
+   sobre `SIGALRM`, nueva categoría `caso_timeout_abortado`) y el flag
+   `--agent-mode {flat,subagent,adaptive}` para elegir qué tools registra
+   `_register_world_tools` sin tocar `build_agent` por experimento.
+
+Los ocho quedan expuestos como overrides opcionales de `config` en
+`build_agent` (`optional_keys_list`), sin tocar `mia_world/` ni las 3
+líneas `NO CAMBIAR` de `student_framework/__init__.py`, y verificados con
+`MockLLMClient`/`World` sintético antes de cualquier corrida contra
+Bedrock — la suite de conformidad se mantuvo en **78/78** a lo largo de
+todos.
 
 ## 1. Aproximación
 
-El agente que resuelve los escenarios es exactamente el de M1+M2
-(`student_framework/agent.py`), sin ninguna especialización para el mundo
-simulado: mismo `run`, misma ventana deslizante de historial, mismos
-reintentos ante fallos transitorios. Lo único que cambia por caso es qué
-tools están registradas — las del mundo (`mia_world.tools.make_world_tools`)
-se agregan sobre un agente recién construido con `build_agent(config)`,
-igual que ya lo hacía `mia_world/cli.py::_cmd_run` para una corrida manual.
+### 1.1 Agente base — M1+M2 sin especializar
 
-Nota: `build_agent` registra siempre las tres tools de M1 (`simple_calc`,
+El agente que resuelve los escenarios de escape-room es exactamente el de
+M1+M2 (`student_framework/agent.py`): mismo `run`, misma ventana deslizante
+de historial, mismos reintentos ante fallos transitorios. Lo único que
+cambia por caso es qué tools están registradas — las del mundo
+(`mia_world.tools.make_world_tools`) se agregan sobre un agente construido
+con `build_agent(config)`, igual que ya lo hacía `mia_world/cli.py`.
+
+`build_agent` sigue registrando siempre las tools de M1 (`simple_calc`,
 `leer_archivo`, `optimizar_portfolio_markowitz`) además de las del mundo —
-no se filtran para los escenarios de M3. Es el mismo comportamiento que ya
-tenía la CLI de `mia_world`; no lo cambiamos porque el enunciado no pide
-tocar `build_agent` de forma especial, pero es una fuente de ruido en el
-tool-list que el LLM ve (herramientas irrelevantes para una sala de escape).
+no se filtran para M3, porque el enunciado no pide especializar
+`build_agent`; queda como ruido conocido en el tool-list que ve el LLM.
 
-Lo que sí es trabajo nuevo de M3 es la infraestructura de evaluación,
-construida en `eval/`:
+### 1.2 Infraestructura de evaluación (`eval/`)
 
-- **`eval/runner.py`**: `run_case`/`run_suite`. Por cada escenario y cada
-  trial, copia (`copy.deepcopy`) el `World` inicial del escenario —
-  necesario porque las tools mutan el `World` en sitio, así que reusar la
-  misma instancia entre trials contaminaría el punto de partida de los
-  siguientes—, construye un agente fresco, corre `agent.run(user_message)` y
-  captura: `AgentResult` completo, tiempo de wall-clock, resultado de
-  `check_goal` y el `event_log` del mundo. Envuelve la llamada a `agent.run`
-  en `try/except` para que una excepción inesperada de un caso no aborte el
-  resto de la suite (el contrato de M1/M2 dice que `run` nunca debería
-  lanzar; si lo hace, se registra como su propio modo de fallo en vez de
-  tirar abajo la corrida). Además, antes de correr, envuelve todas las
-  tools ya registradas en el agente (`_instrument_goal_progress`) para
-  reevaluar `check_goal` después de cada invocación — así cada caso guarda
-  `goal_achieved_at_step`, el número de paso exacto en el que se cumplió la
-  meta (distinto de "pasos totales usados", que puede incluir acciones
-  posteriores). Verificado de forma determinística con un `MockLLMClient`
-  scripteado antes de usarlo en una corrida paga.
+- **`eval/runner.py`** (`run_case`/`run_suite`): por cada escenario y
+  trial, copia (`copy.deepcopy`) el `World` inicial (las tools lo mutan en
+  sitio), construye un agente fresco, corre `agent.run(...)` envuelto en
+  `try/except` (una excepción no debe abortar la suite — M1/M2 exige que
+  `run` nunca lance) y captura `AgentResult`, tiempo de wall-clock,
+  resultado de `check_goal` y el `event_log` del mundo. Instrumenta las
+  tools ya registradas (`_instrument_goal_progress`) para reevaluar
+  `check_goal` después de cada invocación y guardar
+  `goal_achieved_at_step` (distinto de "pasos totales usados"). Gana
+  `agent_mode: "flat" | "subagent"` (sección 1.3.2).
 - **`eval/run.py`**: CLI reproducible (`python eval/run.py`). Resuelve
-  escenarios por id, dificultad o `all` (una dificultad expande a *todos*
-  sus escenarios — a diferencia de `mia_world.cli._resolve_scenario`, que
-  toma solo el primero, acá hace falta la suite completa), acepta overrides
-  de config (`--max-history-messages`, `--max-iterations`,
-  `--system-prompt`, o un JSON arbitrario con `--config`) para poder
-  reusarse en baseline y en cada experimento sin tocar código, y un flag
-  `--judge` opcional para correr además la rúbrica cualitativa (cuesta el
-  doble de llamadas al LLM, por eso es opt-in). Deja un JSON por caso más
-  `summary.json`/`summary.md` en `eval/results/<label>/`, sin pasos
-  manuales entre la corrida y el informe.
+  escenarios por id, dificultad o `all`, acepta overrides de config
+  (`--max-history-messages`, `--max-iterations`, `--system-prompt`/
+  `--system-prompt-file`, `--planner`, `--agent-mode`, o un JSON arbitrario
+  con `--config`) y un flag `--judge` opcional para la rúbrica cualitativa.
+  Deja un JSON por caso más `summary.json`/`summary.md` en
+  `eval/results/<label>/`.
 - **`eval/metrics.py`** y **`eval/failure_modes.py`**: ver secciones 2 y 3.
+
+**Harness agregado — timeout por caso** (`eval/runner.py::_case_time_limit`,
+`run_case`/`run_suite` ganan `case_timeout_seconds`, `eval/run.py` gana
+`--case-timeout-seconds`): motivado por un incidente real de esta entrega
+(sección 4.4) donde un caso quedó colgado contra el proveedor de LLM y
+obligó a matar el proceso completo a mano, perdiendo también los casos ya
+corridos que no se habían guardado todavía. Antes de este harness,
+`agent.run()` no tenía ningún límite propio más allá de `max_iterations` —
+que no ayuda si lo que tarda es una sola llamada de red, no el número de
+pasos. Implementado con `signal.setitimer(SIGALRM, ...)` (no un
+hilo/proceso aparte) para poder interrumpir también una llamada de red
+bloqueante, que es exactamente lo que pasó en el incidente real. Si un caso
+excede el límite, ese caso puntual se marca como fallo
+(`caso_timeout_abortado` en `eval/failure_modes.py`) y la suite sigue con
+el resto — no hace falta matar el proceso ni perder los casos ya corridos.
+
+Detalle no obvio encontrado al verificar con `MockLLMClient`: el
+`AgentResult.error` del corte típicamente aparece dentro de
+`agent_result.error`, no en `run_error` de más arriba, porque
+`MyAgent.run()` atrapa *cualquier* excepción de la llamada al LLM (contrato
+M1/M2 de "nunca lanza") y la vuelca ahí en vez de dejarla propagar — el
+mismo mecanismo por el que `ciclo_escalado_abortado` (sección 1.3.3) tampoco
+aparece en `run_error`. Y un hallazgo más sutil todavía: la primera versión
+de la excepción se llamaba `CaseTimeoutError`, y el solo nombre de la clase
+(sin importar el mensaje) hacía que
+`student_framework/agent.py::_is_transient_error` la clasificara como fallo
+transitorio de LLM (contiene el substring `"timeout"`) y la **reintentara**
+en vez de dejarla propagar — el propio reintento del agente se tragaba el
+corte del harness, y el caso terminaba de todas formas, solo que más tarde
+de lo pedido. Renombrada a `CaseDeadlineExceeded` (ni la clase ni el mensaje
+matchean ningún marcador de `_TRANSIENT_MARKERS`) para que se trate como
+error permanente y el corte sea efectivo en el primer intento. Verificado
+con `MockLLMClient` (un cliente que duerme más que el límite): el caso se
+corta a tiempo, `run_suite` sigue normalmente con el siguiente caso, y un
+caso rápido con un límite generoso no se ve afectado. Trade-off aceptado:
+solo funciona en el hilo principal y en sistemas POSIX (usa `SIGALRM`); en
+Windows, o si no se pasa `--case-timeout-seconds`, el caso corre sin límite,
+igual que antes de este cambio.
+
+Todo verificado de forma determinística con `MockLLMClient` scripteado
+antes de gastar contra un proveedor real — criterio aplicado sin excepción
+a lo largo de todo M3, incluidas las siete extensiones de framework de la
+sección 1.3.
+
+### 1.3 Extensiones de framework agregadas en esta entrega
+
+De las opciones discutidas (memoria semántica/resumen, subagentes,
+planificación explícita, detección de ciclos), se implementaron primero
+las tres que más se diferencian de "ajustar un parámetro o el texto del
+prompt", y que el propio `ENUNCIADO_M3.md` sugiere para `apartment-keys`/
+`office-sequence` (secciones 1.3.1-1.3.3): planner, subagentes, y
+detección de ciclos. A partir de ahí, cada experimento de la sección 4
+fue exponiendo un modo de fallo concreto que motivó una extensión nueva
+— la capa adaptativa (1.3.4), el mapa de navegación (1.3.5), y los dos
+mecanismos más recientes contra fallos repetidos/estancamiento
+(`remind_pending_failures`, 1.3.6, y `reflect_on_stall`, 1.3.7) — hasta
+las siete que quedan documentadas acá (resumidas también en la sección
+0.1). Ninguna tocó `mia_world/` (scaffold fijo) ni las 3 líneas marcadas
+`NO CAMBIAR` en `student_framework/__init__.py`; las siete quedan
+expuestas como overrides de `config` en `build_agent`
+(`optional_keys_list`).
+
+#### 1.3.1 Planner explícito
+
+Nuevo parámetro `MyAgent(planner=True)`. En la primera llamada a `run()` de
+una conversación, antes del loop ReAct habitual:
+
+1. Se dispara una fase de planificación aislada vía `structured_call` (la
+   misma pieza de M2 que usa `final_result` para salida validada) contra un
+   schema nuevo `_Plan` (`subgoals: list[str]`, 3 a 8 sub-metas ordenadas).
+2. El texto del plan se antepone al mensaje de usuario original (se
+   aumenta, no se reemplaza), y ese mensaje aumentado arranca el historial
+   y el loop ReAct de siempre.
+3. Si el planner no logra un plan válido, se degrada silenciosamente a
+   ReAct puro: un fallo del planner nunca rompe `run()`.
+4. Solo planifica una vez por instancia (`self._planned`).
+
+Deliberadamente no se tocó el loop ReAct en sí — la variable experimental
+es únicamente "¿el mensaje que arranca la conversación trae un plan de
+sub-metas, o no?".
+
+#### 1.3.2 Subagentes — delegación de tools
+
+Separa responsabilidades entre dos agentes en vez de un único loop
+monolítico (`student_framework/tools/explorer_subagent.py`):
+
+- **Explorador**: `MyAgent` con únicamente `look`/`examine` registradas y
+  system prompt propio. Investiga la sala actual y devuelve un resumen en
+  texto.
+- **Actor**: registra `take`/`use`/`go` más una tool nueva,
+  `explorar_sala(foco=None)`, en vez de `look`/`examine` directas.
+
+`make_explorer_tool(llm_client, look_pair, examine_pair, world,
+cost_sink=...)` arma la tool. Cada invocación *real* construye un
+explorador nuevo (sin historial acumulado, reusa el mismo `llm_client` del
+actor) — "real" porque cachea por firma de estado del `World`
+(`_state_signature`): si nada cambió desde la última exploración con el
+mismo `foco`, devuelve el mismo resumen sin gastar LLM. `foco` (opcional)
+permite pedir una lectura profunda de *un* objeto puntual en vez de barrer
+toda la sala de nuevo. Las líneas `Inventario:`/`Cerraduras:` del resumen
+se recalculan siempre desde `world` (`_apply_ground_truth`), nunca se
+confía en que el explorador las reporte bien — son datos 100% derivables.
+
+**Costo oculto, medido explícitamente**: `mia_agents/types.py` documenta
+que sub-agentes invocados por herramientas no se contabilizan en el
+`AgentResult` de quien los invoca. `cost_sink` acumula `calls`/
+`input_tokens`/`output_tokens` de cada corrida del explorador;
+`eval/metrics.aggregate_explorer_cost` los suma y `eval/run.py` los
+reporta aparte en `summary.md`/`summary.json`, para que la comparación de
+costo entre modos sea honesta.
+
+`eval/runner.py` gana `agent_mode: "flat" | "subagent"`; `eval/run.py`
+gana `--agent-mode {flat,subagent}`.
+
+#### 1.3.3 Detección de ciclos en el loop del agente
+
+Extensión genérica de framework (no específica de subagentes, aplica igual
+a `flat`) motivada por `accion_repetida_fallida`, el modo de fallo más
+persistente de todo el proyecto. `MyAgent` gana tres parámetros:
+
+- `max_consecutive_repeats: int = 2` y `max_cycle_period: int = 8`:
+  `_is_looping(steps, name, arguments_json)` detecta si el intento actual
+  completaría la repetición de un bloque de 1 a `max_cycle_period` llamadas
+  ya visto `max_consecutive_repeats + 1` veces seguidas, comparando
+  `(tool_name, tool_input, tool_output, error)` completo (no solo el
+  nombre/argumentos — necesario porque tools como `go` dan resultados
+  distintos con argumentos idénticos según el estado). Si detecta el
+  patrón, no ejecuta la tool: le devuelve al modelo un mensaje correctivo
+  explícito en su lugar.
+- `max_blocked_repeats: int = 5`: si el bloqueo se sostiene más de
+  `max_blocked_repeats` veces seguidas sin que se ejecute ninguna tool real
+  en el medio, `run()` corta la ejecución y devuelve un `AgentResult.error`
+  explícito en vez de seguir agotando `max_iterations` sin ninguna chance
+  real de converger.
+
+`eval/failure_modes.py` gana `ciclo_escalado_abortado` para distinguir este
+corte deliberado de un fallo real del LLM/proveedor
+(`fallo_llm_no_transitorio`).
+
+#### 1.3.4 Capa adaptativa: decidir planificar/delegar según complejidad anticipada
+
+Las tres extensiones anteriores se activan con una decisión externa y fija
+(`planner=True`/`agent_mode="subagent"`, elegidos antes de correr el
+agente, iguales para los 24 casos de una corrida). Esta capa reemplaza esa
+decisión externa por una que el propio modelo hace, caso por caso, a
+partir de la complejidad aparente del objetivo — sin necesitar dos
+corridas separadas para comparar "con" y "sin".
+
+`MyAgent(adaptive=True)` (precedencia sobre `planner` si ambos son
+`True`): en la primera llamada a `run()` de una conversación, en vez de
+planificar siempre o nunca, dispara una fase de **triage** —
+`structured_call` aislado contra un schema nuevo `_Triage`
+(`plan_needed: bool`, `subgoals: list[str]`, `delegate_exploration_needed:
+bool`) — donde el modelo evalúa, a partir únicamente del mensaje inicial
+(que en este dataset ya describe la sala/objetivo de partida), si conviene
+anteponer un plan de sub-metas y/o recomendar delegar la exploración a
+`explorar_sala`. Igual que el planner, se degrada silenciosamente a ReAct
+puro si el triage no logra una salida estructurada válida.
+
+Diseño, en su estado actual (v2, tras el fix de la sección 4.6 — la v1
+original solo agregaba la recomendación como texto, sin tocar qué tools
+están disponibles; ver más abajo por qué cambió):
+
+- `agent_mode="adaptive"` en `eval/runner.py::_register_world_tools`
+  registra **ambas rutas a la vez** (`look`/`examine` directas *y*
+  `explorar_sala`), a diferencia de `"subagent"` (que solo registra
+  `explorar_sala`, sin alternativa) o `"flat"` (solo las directas).
+- Si ambas rutas quedan registradas, el triage no se limita a
+  *recomendar* una — **poda** de `self._tools`/`self._schemas` la que no
+  eligió: si `delegate_exploration_needed` es `True`, elimina
+  `look`/`examine` y deja solo `explorar_sala`; si es `False`, elimina
+  `explorar_sala` y deja `look`/`examine`. El mensaje aumentado avisa
+  explícitamente cuál tool ya no está disponible. Si solo una ruta estaba
+  registrada de entrada (`agent_mode="subagent"` o `"flat"` puros con
+  `adaptive=True`), no hay nada que podar — la recomendación queda como
+  texto nomás (subagent) o se omite del todo si la ruta recomendada ni
+  siquiera existe (flat).
+
+**Por qué se agregó la poda (no estaba en la v1 original)**: la primera
+corrida contra Bedrock (v1, solo recomendación textual, ver más abajo) dio
+58% y encontró un modo de fallo nuevo — con ambas rutas *siempre*
+disponibles, un trial de `backtracking-vault` gastó los 100 pasos
+completos alternando `explorar_sala`/`examine`/`look` sin un solo
+`take`/`use`/`go`: tener una salida constante para "explorar una vez más"
+le permitió al modelo posponer indefinidamente el momento de actuar. La
+poda cierra esa salida en cuanto el triage decide, forzando al modelo a
+comprometerse con una sola vía de información desde el principio de la
+conversación.
+
+`eval/run.py` gana `--adaptive` (activa `config["adaptive"]=True`,
+independiente de `--agent-mode`, igual que `--planner`) y
+`--agent-mode adaptive` (registra el toolset híbrido). El uso previsto es
+combinar ambos: `--agent-mode adaptive --adaptive`.
+
+Verificado con `MockLLMClient` (sin gastar nada), sobre las cinco
+combinaciones relevantes: ambas rutas registradas + `delegate_needed=True`
+poda `look`/`examine` y dice explícitamente que solo queda
+`explorar_sala`; ambas registradas + `delegate_needed=False` poda
+`explorar_sala` y dice que solo quedan `look`/`examine`; solo
+`explorar_sala` registrada (combo con `agent_mode="subagent"`) no poda
+nada, solo refuerza con texto; solo `look`/`examine` registradas (combo con
+`agent_mode="flat"`) no agrega ningún texto ni poda nada;
+`plan_needed`+`delegate_needed` ambos `True` conviven en el mismo triage
+sin interferirse. Además: un triage que nunca invoca `final_result`
+degrada a ReAct puro sin romper `run()`; una segunda llamada a `run()`
+sobre la misma instancia no vuelve a triagear. Confirmado también a través
+de `eval.runner._register_world_tools` con `agent_mode="adaptive"`: el
+actor queda con `examine`, `explorar_sala`, `look`, `take`, `use`
+registradas simultáneamente antes del triage (más las tools de M1), y el
+`cost_sink` del explorador se sigue reportando aparte.
+
+**Confirmado contra Bedrock (sección 4.7): el fix de poda dio peor, no
+mejor** (42% vs. 58% de la v1 sin podar) — la causa no fue un bug de la
+poda en sí, sino que expuso un sesgo del triage hacia recomendar delegar
+(83% de los trials) que la poda vuelve irreversible. Ver sección 4.7 para
+el análisis completo y sección 5 para la conclusión de este experimento.
+
+#### 1.3.5 `consultar_mapa`: mapa de navegación determinístico (sin LLM)
+
+Motivada por `perdida_de_mapa_multi_sala` — el modo de fallo multi-sala
+más persistente de todo el proyecto — y por lo encontrado en las
+secciones 4.6/4.7: buena parte de los fallos de `adaptive`/`subagent` en
+escenarios multi-sala vienen de que el agente pierde el hilo de qué salas
+ya visitó y qué salidas ya probó, algo que el prompt le pide sostener en
+su propia prosa ("mantené una lista de salas visitadas...") sin éxito.
+
+`student_framework/tools/room_graph.py` agrega `consultar_mapa()` (sin
+argumentos): **no usa el LLM en ningún momento** — es una función pura de
+`World`, en el mismo espíritu que `_apply_ground_truth` (sección 1.3.2)
+pero para topología de salas en vez de inventario/cerraduras. Sin costo,
+sin necesidad de caché.
+
+Qué expone, cuidando de no filtrar información que el agente no tiene
+realmente (`look()` ya revela todas las direcciones de salida de la sala
+actual, pero nunca el destino de una salida hasta cruzarla):
+
+- **Salas visitadas y camino recorrido** (con repeticiones — útil
+  específicamente para hacer explícito el backtracking en escenarios como
+  `backtracking-vault`), derivados de `world.event_log` (`"enter:<sala>"`).
+- **Todas las salidas de cada sala visitada** (`room.exits`): siempre
+  seguro de mostrar, es lo que `look` ya mostró al entrar.
+- **El destino de una salida, solo si esa transición específica ya
+  ocurrió** — inferido cruzando pares consecutivos del camino recorrido
+  contra las salidas de la sala de origen. Si no se cruzó todavía, queda
+  como "destino sin confirmar" (con el estado del gate si la salida está
+  bloqueada), nunca se revela de antemano.
+
+`eval/runner.py::_register_world_tools` gana `include_room_graph: bool =
+False`, **independiente de `agent_mode`**: se agrega igual en `flat`,
+`subagent` o `adaptive`, y solo si el escenario tiene navegación (mismo
+chequeo que usa `make_world_tools` para decidir si registra `go`).
+`eval/run.py` expone `--room-graph`. La independencia de `agent_mode` es
+deliberada: permite correr el mismo experimento "con mapa" vs. "sin mapa"
+sobre cualquiera de las tres arquitecturas ya comparadas en la sección
+3.2, en vez de atarlo a una sola.
+
+Verificado con un `World` sintético armado a mano (sin gastar nada): sala
+sin moverse (salidas sin confirmar, gate bloqueado mostrado correctamente);
+tras cruzar una salida, el edge queda confirmado en ese sentido; un gate
+que se abre pero todavía no se cruza sigue "sin confirmar" (ahora con
+estado "abierta"); backtracking A→B→A confirma ambos sentidos del edge;
+sala de una sola habitación no rompe la función; `_register_world_tools`
+agrega la tool en los tres `agent_mode` cuando se pide y hay navegación,
+y no la agrega en escenarios de una sola sala aunque se pida. Suite de
+conformidad: 78/78.
+
+**Primeras corridas reales (secciones 4.8-4.10): la tool casi no se usó**
+— entre 4 corridas contra Bedrock (`flat`/`adaptive`, con y sin mención
+explícita en el prompt), `consultar_mapa` se llamó en 2-3 de cada 24
+casos. Ni siquiera mencionarla explícitamente en el prompt
+(`prompts/long_prompt_estado_mapa.txt`) cambió sustancialmente esa tasa de
+adopción — el problema no era la calidad de la tool, era que competía mal
+por atención contra una lista larga de tools sin ninguna garantía de uso.
+
+**Fix v2: `go` incondicional en vez de `consultar_mapa` opt-in**
+(`wrap_go_with_map` en `room_graph.py`): en vez de depender de que el
+modelo elija llamar `consultar_mapa`, `_register_world_tools` ahora
+**envuelve la tool `go` en sí** cuando `include_room_graph=True` — cada
+`go` real ejecuta primero `_build_map_text(world)` (el mapa tal como
+estaba justo antes de ese movimiento) y antepone ese texto al resultado
+real de la navegación. El modelo ya no puede moverse sin recibir el mapa;
+`consultar_mapa` sigue registrada aparte para consultarlo en cualquier
+otro momento (p. ej. antes de decidir qué dirección tomar), pero ya no es
+la única vía de exposición.
+
+**Detalle no trivial, verificado explícitamente**: como `go` solo agrega
+una entrada a `event_log` cuando el movimiento es exitoso, repetir un
+intento contra una salida bloqueada (mismo error, sin cambio de estado)
+devuelve el mapa envuelto **exactamente igual** las veces que se repita —
+`(tool_output, error)` no cambia entre repeticiones, así que
+`_is_looping` (sección 1.3.3) sigue detectando ese ciclo igual que antes
+de este cambio. Un backtracking legítimo, en cambio, sí hace crecer el
+"camino recorrido" en cada llamada exitosa, así que cada resultado es
+distinto por diseño — reforzando, no rompiendo, el fix de falsos
+positivos ya documentado.
+
+Verificado con un `World` sintético (sin gastar nada): el mapa aparece
+antepuesto al resultado real en un `go` exitoso; tres intentos seguidos
+contra una salida bloqueada dan la salida idéntica byte a byte; un
+backtracking A→B→A da salidas distintas en cada paso (el mapa crece); en
+los tres `agent_mode`, el `go` registrado es la versión envuelta cuando
+`include_room_graph=True` (y `consultar_mapa` sigue disponible aparte);
+con `include_room_graph=False`, `go` queda exactamente como antes de todo
+este trabajo. Suite de conformidad: 78/78.
+
+**Todavía sin una corrida real que confirme si esto mueve la aguja** —
+las corridas de las secciones 4.8-4.10 usaron la v1 de `consultar_mapa`
+(opt-in, sin el `go` envuelto); falta repetir el experimento con este fix
+para saber si garantizar la exposición del mapa en cada movimiento
+alcanza para que efectivamente ayude a la navegación multi-sala, algo que
+ninguna corrida hasta ahora pudo poner a prueba porque la tool casi nunca
+se usó.
+
+Verificación de las cinco extensiones: ver sección 4 (cada una se probó
+con `MockLLMClient`/`World` sintético antes de cualquier corrida paga) y
+la suite de conformidad, que se mantuvo en **78/78** a lo largo de todos
+los cambios de esta entrega.
+
+#### 1.3.6 `remind_pending_failures`: no dejar que un error se pierda en el historial
+
+Motivada por una revisión puntual, no por un número agregado: en
+`apartment-keys`/`backtracking-vault` (secciones 4.11/4.12),
+`accion_repetida_fallida` seguía apareciendo pese a la detección de
+ciclos (sección 1.3.3). Revisando las transcripciones, la causa resultó
+ser distinta de lo que esa detección cubre: `_is_looping` solo bloquea
+repeticiones **consecutivas** de la misma acción; un agente que reintenta
+la misma acción ya fallida cada tantos pasos (intercalando otras
+acciones en el medio) nunca activa esa protección, aunque
+`eval/failure_modes.py` sí lo marque como fallo repetido en el agregado
+post-hoc. Un caso concreto: `apartment-keys_t1` repite `use(llave_oro,
+puerta_principal)` con el error `"no llevás ningún 'llave_oro'"` — nunca
+tomó la llave — pero el reintento ocurre bastante después del primer
+fallo, no en la ráfaga inmediata que `_is_looping` vigila.
+
+`MyAgent(remind_pending_failures=True)`: cada vez que una tool falla
+(`AgentStep.error`, o un "error suave" `"Error: ..."` como devuelven
+varias tools de `mia_world`), el error queda registrado por
+`(tool_name, arguments_json)` en `self._pending_failures`. En cada turno
+siguiente, mientras ese fallo no se resuelva, se agrega un recordatorio
+**transitorio** a los `messages` de esa llamada puntual — nunca a
+`self._history` — listando los fallos pendientes más recientes (tope 5).
+Se limpia solo en cuanto esa misma `(tool_name, arguments_json)` se
+ejecuta con éxito. Genérico y no específico de `mia_world`: no le importa
+qué tool falló ni por qué, solo que el mismo `(nombre, argumentos)` ya
+falló antes y todavía no tuvo éxito.
+
+Es deliberadamente distinto de `_is_looping`: uno corta *ejecuciones*
+repetidas en ráfaga (evita gastar presupuesto en algo que ya sabemos que
+va a fallar igual); el otro mantiene *visible* un fallo que ya pasó, para
+que el modelo no lo "olvide" en una conversación larga antes de
+reintentarlo — se complementan, no se solapan. Confirmado además una
+interacción real entre ambos al verificar: si el modelo reintenta la
+*misma* acción fallida una tercera vez seguida (sin variar nada en el
+medio), `_is_looping` la bloquea antes de que pueda ejecutarse con éxito
+— el recordatorio pendiente solo se limpia cuando la tool se ejecuta de
+verdad, así que en ese caso particular sigue esperando hasta que el
+modelo varíe algo primero.
+
+`build_agent` lo expone en `optional_keys_list`
+(`remind_pending_failures`); `eval/run.py` gana `--remind-failures`.
+Default `False` en ambos casos, para no alterar la comparabilidad de
+ningún número ya documentado en este informe.
+
+Verificado con `MockLLMClient`: la primera llamada (sin fallos previos)
+no lleva recordatorio; tras un fallo, la siguiente sí lo lleva con el
+texto de error real; una vez que la misma acción se ejecuta con éxito
+(simulado completando el estado "por fuera" del mock), el recordatorio
+desaparece de la llamada siguiente; el recordatorio nunca queda en
+`self._history`; con el flag en `False` (default), nunca aparece aunque
+la tool falle igual. Suite de conformidad: 78/78.
+
+**Contra un proveedor real** (sección 4.13, smoke test acotado a
+`color-locks`/`library-search`): sin evidencia de mejora. La causa,
+confirmada por transcripción, no es un problema de implementación sino
+de hipótesis — la mayoría de los `accion_repetida_fallida` observados no
+son "el modelo olvidó el error", que es lo que este mecanismo soluciona,
+sino "el modelo no dedujo la corrección obvia" o "abandonó la tarea sin
+haber fallado nada en ese punto". Documentado como resultado negativo con
+la muestra acotada, sin escalar a la corrida completa de 8 escenarios.
+
+#### 1.3.7 `reflect_on_stall`: pedirle al modelo que diagnostique su propio estancamiento
+
+Motivada directamente por la transcripción de la sección 4.13:
+`remind_pending_failures` no ayudó en ninguno de los dos casos que falló
+en `color-locks`, y por una razón distinta en cada uno. En
+`color-locks_t1` el modelo reintentó `use(llave_oro, puerta_principal)`
+tres veces con el mismo error (`"no llevás ningún llave_oro"` — nunca la
+tomó), pero al ver el recordatorio no dedujo la corrección obvia: probó
+un id inventado (`llave_plateada`) en vez de volver a `take(llave_oro)`.
+En `color-locks_t0` el modelo sí tomó la llave con éxito, pero después
+nunca volvió a intentar usarla — no hubo ningún fallo que recordar,
+porque la única llamada relevante no falló. Ningún string-matching sobre
+errores de `mia_world` cubre ambos casos a la vez: uno necesita razonar
+sobre un error que ya tiene delante, el otro necesita notar que algo del
+inventario quedó sin usar.
+
+`MyAgent(reflect_on_stall=True, stall_window=6)`: el framework cuenta
+pasos consecutivos "sin novedad" — un paso sin novedad es uno cuya tupla
+`(tool_name, tool_input, tool_output, error)` ya apareció antes en la
+corrida, sin exigir que sea la última tool llamada (a diferencia de
+`_is_looping`, que solo mira rachas consecutivas). Al llegar a
+`stall_window` pasos sin novedad seguidos, se dispara `_reflect`: una
+llamada aparte vía `structured_call` (aislada de `self._history`, mismo
+mecanismo que `_plan_subgoals`/`_triage`) donde se le pasa al modelo el
+resumen de las últimas acciones y resultados, y se le pide un diagnóstico
+en una oración más una sugerencia concreta de próximo paso — sin
+indicarle nada sobre qué buscar, para no reintroducir el mismo
+string-matching que se quiso evitar. La respuesta se inyecta como
+recordatorio transitorio (nunca a `self._history`) en el turno
+inmediatamente siguiente, una única vez, y el contador se reinicia.
+
+Deliberadamente genérico y no acoplado a `mia_world`: no reconoce ningún
+texto de error puntual, solo mide ausencia de resultados nuevos. Es, a
+la vez, la pieza más especulativa de esta entrega — es el mismo modelo
+que viene fallando en razonar el que tiene que auto-diagnosticarse en la
+llamada de reflexión, así que no hay garantía de que ayude más que
+`remind_pending_failures`; es una hipótesis a probar, no algo confirmado.
+
+`build_agent` lo expone en `optional_keys_list`
+(`reflect_on_stall`, `stall_window`); `eval/run.py` gana
+`--reflect-on-stall`/`--stall-window`. Default `False`/`6`, sin alterar
+ningún número ya documentado.
+
+Verificado con `MockLLMClient`: sin `reflect_on_stall`, nunca se dispara
+ninguna llamada de reflexión aunque se repita la misma tool
+indefinidamente; con el flag activo, tras `stall_window` repeticiones
+idénticas de la misma tool se dispara exactamente una llamada de
+reflexión, cuya respuesta aparece como recordatorio transitorio en el
+turno siguiente y no en `self._history`; se limpia tras un solo uso
+(`_active_reflection_hint` vuelve a `None`); si la llamada de reflexión
+agota los reintentos de reparación (`StructuredOutputError`), `_reflect`
+devuelve `None` y `run` sigue sin cortarse. Suite de conformidad: 78/78.
+
+**Contra un proveedor real** (sección 4.14, mismo smoke test que
+`remind_pending_failures`): resultado mixto. Mejoró `color-locks` (100%
+vs. 83% de baseline, n=3) pero no evitó que `library-search_t2` fallara
+por la misma causa raíz que ya se había visto en la sección 4.13 (un
+objeto usado sin haberlo tomado antes) — la reflexión se disparó tal como
+estaba diseñada (confirmado reconstruyendo la cuenta de pasos sin
+novedad), pero el modelo no corrigió el error de todos modos. Confirma la
+hipótesis planteada arriba: ayuda a veces, pero no es una solución
+confiable a "el modelo no infiere la corrección", porque sigue siendo el
+mismo modelo el que tiene que hacerlo.
+
+Verificación de las siete extensiones: ver sección 4 (cada una se probó
+con `MockLLMClient`/`World` sintético antes de cualquier corrida paga) y
+la suite de conformidad, que se mantuvo en **78/78** a lo largo de todos
+los cambios de esta entrega.
 
 ## 2. Métricas
 
 **Cuantitativas:**
 
 - **Success rate** (`goal_achieved`, de `check_goal`): mira el estado del
-  `World`, no el texto del agente — es la métrica que pide el enunciado
-  precisamente porque es imposible de falsear con una respuesta verborrágica
-  que declara éxito sin haberlo logrado.
+  `World`, no el texto del agente — imposible de falsear con una respuesta
+  verborrágica que declara éxito sin haberlo logrado.
 - **Eficiencia** (`tool_calls_usados / optimal_calls`, tabla de
-  `ENUNCIADO_M3.md` hardcodeada en `metrics.OPTIMAL_CALLS` porque no vive en
-  el JSON del escenario): distingue un agente que resuelve el escenario de
-  forma directa de uno que llega a la meta después de vagabundear. 1.0 es
-  óptimo; valores bajos indican exploración redundante.
-- **Costo/latencia**: tokens acumulados (`input_tokens`/`output_tokens` de
-  `AgentResult`, ya implementados en M2) y tiempo de wall-clock por caso.
-  Justificado porque Bedrock cobra por token y el enunciado lista
-  explícitamente "coste" y "latencia" como métricas válidas.
+  `ENUNCIADO_M3.md` hardcodeada en `metrics.OPTIMAL_CALLS`): distingue un
+  agente directo de uno que llega a la meta vagabundeando. 1.0 es óptimo.
+- **Costo/latencia**: tokens acumulados (`input_tokens`/`output_tokens`,
+  de M2) y tiempo de wall-clock por caso. Bedrock cobra por token, y el
+  enunciado lista "coste" y "latencia" como métricas válidas.
 
 **Cualitativa:** rúbrica de 3 dimensiones (`exploracion_dirigida`,
 `recuperacion_de_errores`, `uso_de_planificacion`, cada una 1–5 +
-justificación) vía LLM-as-judge, implementada reusando el propio
-`structured_call` del framework (`eval.metrics.judge_case`, agente separado
-sin tools sobre la transcripción de `steps`). Justificación: `check_goal` es
-binario y no distingue un agente que casi resuelve `office-sequence` (llega
-al orden correcto pero se equivoca en el último paso) de uno que divaga sin
-rumbo — la rúbrica da esa señal donde el booleano no alcanza. Es opt-in
-(`--judge`) porque duplica el costo de llamadas al LLM.
+justificación) vía LLM-as-judge (`eval.metrics.judge_case`, reusa el propio
+`structured_call` del framework). `check_goal` es binario y no distingue
+un agente que casi resuelve `office-sequence` de uno que divaga sin rumbo
+— la rúbrica da esa señal. Es opt-in (`--judge`) porque duplica el costo de
+llamadas al LLM.
 
-## 3. Análisis de errores
-
-`eval/failure_modes.py` categoriza cada caso fallido (nunca los exitosos) en
-una o más de estas categorías, derivadas únicamente de campos observables en
-`AgentResult`/`AgentStep` — son heurísticas, no certezas absolutas:
+**Análisis de errores** (`eval/failure_modes.py`): categoriza cada caso
+fallido (nunca los exitosos) en una o más categorías, derivadas solo de
+campos observables en `AgentResult`/`AgentStep` — heurísticas, no
+certezas:
 
 | Categoría | Señal |
 |---|---|
-| `excepcion_no_capturada` | `agent.run()` lanzó (viola el contrato de M1/M2) |
-| `fallo_llm_no_transitorio` | `AgentResult.error` seteado — un fallo del LLM agotó los reintentos dentro de `run()` |
-| `max_iterations_agotado` | `answer == ""` sin error — la única forma en que nuestro `run()` devuelve eso es agotando el presupuesto de pasos |
+| `excepcion_no_capturada` | `agent.run()` lanzó (viola el contrato M1/M2) |
+| `fallo_llm_no_transitorio` | `AgentResult.error` seteado por un fallo real del LLM/proveedor |
+| `ciclo_escalado_abortado` | `AgentResult.error` seteado por la escalada de detección de ciclos (sección 1.3.3), no por el proveedor |
+| `max_iterations_agotado` | `answer == ""` sin error — agotó el presupuesto de pasos |
 | `tool_call_alucinado` | algún `AgentStep.error` contiene "Herramienta desconocida" |
-| `argumento_invalido_tool_mundo` | `TypeError` crudo de una tool de `mia_world` (fijas, sin mensajes accionables como las nuestras) por un kwarg mal puesto — encontrado en el smoke test (ver más abajo) |
-| `accion_repetida_fallida` | el mismo `(tool_name, tool_input)` falla 2+ veces — el agente no aprende del error |
-| `desborde_de_contexto` | específico de `extreme-archive`: agotó pasos en el escenario diseñado para no caber en el contexto |
-| `orden_de_secuencia_violado` | específico de `office-sequence` (goal `sequence`): `check_goal` reporta violación de orden |
-| `perdida_de_mapa_multi_sala` | escenarios multi-sala: navega (`go`) más del doble de veces que direcciones distintas pidió — aproximado, no distingue backtracking legítimo (p. ej. `backtracking-vault`, que lo requiere por diseño) |
-| `se_detuvo_sin_lograr_la_meta` | terminó con texto, sin error, pero el mundo no llegó a la meta — se rindió o creyó haber terminado sin lograrlo |
+| `argumento_invalido_tool_mundo` | `TypeError` crudo de una tool de `mia_world` por un kwarg mal puesto |
+| `accion_repetida_fallida` | el mismo `(tool_name, tool_input)` falla 2+ veces (incluye errores "suaves" que las tools de `mia_world` devuelven como string `"Error: ..."` en vez de lanzar) |
+| `desborde_de_contexto` | específico de `extreme-archive`: agotó pasos en el escenario diseñado para no caber en contexto |
+| `orden_de_secuencia_violado` | específico de `office-sequence`: `check_goal` reporta violación de orden |
+| `perdida_de_mapa_multi_sala` | escenarios multi-sala: tramo de puro `enter:` donde el mismo ciclo corto de salas se repite 3+ veces sin ningún `take`/`open` de por medio (no cuenta backtracking legítimo de una sola vuelta) |
+| `se_detuvo_sin_lograr_la_meta` | terminó con texto, sin error, pero el mundo no llegó a la meta |
 
-Durante el smoke test (`study-with-key`, Ollama local `llama3.1:latest`, no
-representativo del proveedor final) apareció un ejemplo real de
-`argumento_invalido_tool_mundo`: el LLM invocó `take(target="llave")` en vez
-de `take(item="llave")`; como la tool del mundo no valida kwargs con un
-mensaje accionable, salió como `TypeError: take_impl() got an unexpected
-keyword argument 'target'` — capturado sin romper la corrida por
-`_execute_tool`, pero sin ayudar al modelo a corregirse. Esa fue justamente
-la motivación para agregar esta categoría específica en vez de dejarlo caer
-en "sin categorizar".
+## 3. Resultados
+
+### 3.1 Evolución hasta la mejor corrida `flat` (sin las 3 extensiones de sección 1.3)
+
+Línea de tiempo condensada de las corridas de calibración de
+`max_iterations`/`max_history_messages`/prompt, todas `--scenarios all
+--trials 3` salvo donde se indica:
+
+| # | Corrida | Cambio | Éxito global |
+|---|---|---|---:|
+| 1 | `baseline` | Config default: `system_prompt` genérico, `max_iterations=10`, `max_history_messages=50` | 12-17% |
+| 2 | `iterations_100-buggy` | `max_iterations: 10→100`, con bug de ventana deslizante activo (sección 4.1) | 42% |
+| 3 | `iterations_100` | Igual, bug corregido | 50% |
+| 4-6 | variantes de prompt sin subir iteraciones | prompt largo, `max_history_messages` alto, `max_iterations` en default | 12-17% |
+| 7 | `long-prompt-hist-100`* | prompt largo + `max_history_messages=200` + `max_iterations=50` | **83% (n=3)** |
+| 8-9 | variantes de historial/iteraciones sobre el mismo prompt | `max_history_messages=100`, `max_iterations` 50→100 | 75% |
+| 10 | `long-prompt-estado-t5-h-100-i-100` | prompt con registro de estado explícito, `max_history_messages=100`, `max_iterations=100`, **5 trials** | **78% (n=5)** |
+
+\* nomenclatura de carpeta engañosa: pese al nombre, usó
+`max_history_messages=200`, no 100 — el valor real de cada variable
+independiente está en el `config` de cada `summary.json`, no en el label.
+
+**Hallazgo dominante de esta fase**: el presupuesto de pasos
+(`max_iterations`) domina sobre el prompt. Ninguna corrida con
+`max_iterations=10` supera 17%, sin importar el prompt; el salto grande
+ocurre siempre que sube a 50+. El prompt largo con registro de estado sí
+importa, pero solo *una vez* que hay presupuesto suficiente para actuar
+según lo que pide. Un bug real de la ventana deslizante de historial
+(mensajes `tool` huérfanos, sección 4.1) se encontró y corrigió en el
+camino — confirmado con un fuzz test de 2000 casos y una re-corrida contra
+Bedrock.
+
+### 3.2 Estado actual: comparación entre arquitecturas
+
+Con las primeras cuatro extensiones de framework de la sección 1.3 ya en
+el código — planner, subagentes, detección de ciclos (con generalización
+de período, escalada, y el fix de falsos positivos de la sección 4.5), y
+la capa adaptativa (sección 1.3.4, en sus dos variantes) — estas son las
+últimas corridas de cada modo — todas `--scenarios all --trials 3`,
+mismo prompt (`prompts/long_prompt_estado.txt`), `max_iterations=100`,
+`max_history_messages=100`:
+
+| Escenario | Dificultad | `flat` (§4.5, v7) | `planner` (§4.3, v7) | `subagent` (§4.4, v9) | `adaptive` v1 (§4.6) | `adaptive` v2 (§4.7) |
+|---|---|---:|---:|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% | 100% | 100% |
+| color-locks | medium | 67% | 33% | 67% | **100%** | 67% |
+| library-search | hard | 67% | 0% | 67% | 67% | **100%** |
+| extreme-archive | extreme | 100% | 100% | 100% | 33% | 33% |
+| apartment-keys | medium | 100% | 100% | 67% | 100% | 33% |
+| office-sequence | hard | 67% | 67% | 33% | 67% | **0%** |
+| vault-combination | extreme | 67% | 67% | 0% | **0%** | **0%** |
+| backtracking-vault | extreme | 33% | 67% | 33% | **0%** | **0%** |
+| **TOTAL** | — | **75%** | **67%** | **58%** | **58%** | **42%** |
+
+`adaptive` aparece con dos lecturas a propósito: v2 (poda de la ruta no
+elegida) fue pensada como un fix de v1, pero salió peor (42% vs 58%) — la
+sección 4.7 explica por qué (el triage sesga fuerte hacia delegar, y la
+poda vuelve esa decisión irreversible). Ninguna de las dos es "la"
+lectura de `adaptive`; ambas quedan documentadas como parte del mismo
+experimento en curso, no como una mejora confirmada. Dos corridas más con
+`consultar_mapa` (secciones 4.8 y 4.10) agregan 42% y 54% a la misma
+serie — ninguna supera el 58% de la v1 sin podar, y en las cuatro el
+factor dominante sigue siendo el mismo (el sesgo del triage hacia
+delegar), no el mapa.
+
+`flat` sigue siendo la arquitectura más fuerte en el agregado, pero la
+brecha con `subagent` (78 puntos porcentuales al inicio de la saga de la
+sección 4.4, con el tope de costo mal calibrado, hasta 20 puntos acá) se
+achicó drásticamente una vez que se identificó que la mayor parte de esa
+brecha era un bug de framework compartido (no cortar loops), no un
+problema de la delegación en sí (ver conclusión de la sección 4.4).
+`planner` no mejora el total frente a `flat` sin plan, pero cambia qué
+escenarios resuelve — ver sección 4.3. `adaptive` empata con `subagent` en
+el total (58%) pero por un motivo distinto y nuevo — ver sección 4.6.
+
+**Nota de varianza**: `backtracking-vault` es el escenario más inestable
+de todo el dataset — ya en esta tabla se ve oscilar entre 0% y 67% según
+la arquitectura, y contando todas las corridas `flat` de todo el informe
+(no solo las de esta tabla) llega a **ocho** lecturas distintas, de 0% a
+100%, sin que ningún cambio de config lo explique con confianza más allá
+de un salto puntual (detalle completo en la sección 5). Ningún número de
+esta tabla debería leerse como definitivo sin más trials.
+
+### 3.3 Mejor pico histórico
+
+La corrida con más muestra de todo el proyecto (`n=5`, sección 3.1 fila
+10) dio **78% de éxito global sobre 40 casos**, con 6 de 8 escenarios al
+100% o cerca. La corrida `flat` con `n=3` de la sección 3.2 usa un fix
+posterior (detección de ciclos generalizada) y da 75-83% según la
+variante exacta — números en el mismo rango, con `n=3` insuficiente para
+declarar cuál es estrictamente mejor.
 
 ## 4. Experimentos
 
-Tres experimentos planeados (diseño en `plan_m3.md`); **experimento 3 ya
-ejecutado**, 1 y 2 pendientes:
+Se corrieron 15 experimentos (secciones 4.1-4.15) que tocan distintas
+capas del framework y del prompting — bastante más allá del único
+experimento de la entrega original (`max_iterations`).
 
-1. **Ventana de historial** (`max_history_messages` chico, p. ej. 8, vs.
-   default 50) — foco en los multi-sala (`apartment-keys`,
-   `office-sequence`, `vault-combination`, `backtracking-vault`); el
-   enunciado señala que `apartment-keys` "pone a prueba la memoria de
-   estado del M2". *Pendiente.*
-2. **Estrategia de prompting** (`system_prompt` genérico vs. uno que pide
-   descomponer el objetivo en sub-metas antes de actuar) — foco en
-   `office-sequence` (goal `sequence`), que el enunciado plantea
-   directamente como "planner explícito vs. ReAct puro". *Pendiente.*
-3. **Presupuesto de pasos** (`max_iterations` default vs. ajustado) —
-   **ejecutado**, ver abajo.
-
-### Experimento 3: presupuesto de pasos (`max_iterations`)
-
-#### Escenario base con promp inútil y max_iteration por default (10)
-```
-python eval/run.py --scenarios all --trials 3 --label baseline 
-```
-
-
-| Escenario | Dificultad | Trials | Success rate | Calls (media/óptimo) | Eficiencia | Paso medio de meta (éxitos) | Tokens in/out (media) | Latencia media (s) |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| study-with-key | easy | 3 | 100% | 5.7 / 3 | 0.53 | 5.7 | 11386/346 | 5.5 |
-| color-locks | medium | 3 | 0% | 10.0 / 11 | 1.10 | — | 20797/734 | 9.7 |
-| library-search | hard | 3 | 0% | 10.0 / 7 | 0.70 | — | 25437/683 | 9.4 |
-| extreme-archive | extreme | 3 | 33% | 15.0 / 4 | 0.32 | 25.0 | 39204/1039 | 11.5 |
-| apartment-keys | medium | 3 | 33% | 12.3 / 7 | 0.60 | 17.0 | 20213/555 | 8.5 |
-| office-sequence | hard | 3 | 0% | 11.0 / 13 | 1.19 | — | 20637/553 | 8.5 |
-| vault-combination | extreme | 3 | 0% | 14.7 / 21 | 1.60 | — | 21992/760 | 10.0 |
-| backtracking-vault | extreme | 3 | 0% | 10.0 / 18 | 1.80 | — | 20682/576 | 8.6 |
-| **TOTAL** | — | 24 | **21%** | — | — | — | — | — |
-
-
-#### Escenario base con promp inútil y max_iteration por default (10) con prompt 
-
+### 4.1 Presupuesto de pasos (`max_iterations`) y el bug de la ventana deslizante
 
 ```
-python eval/run.py --scenarios all --trials 3 --label baseline --system-prompt "Sos un agente que resuelve puzzles tipo escape-room explorando una sala con herramientas (look/examine/take/use/go). Antes de actuar, descomponé el objetivo en una lista corta de sub-metas ordenadas y perseguilas una por una en ese orden; no actúes de forma puramente reactiva paso a paso."
+python eval/run.py --scenarios all --trials 3 --label baseline
+python eval/run.py --scenarios all --trials 3 --label iterations_100 --max-iterations 100
 ```
 
-
-```
-python eval/run.py --scenarios apartment-keys office-sequence vault-combination backtracking-vault \
-    --trials 3 --label exp1-history-8 --max-iterations 100 --max-history-messages 8
-
-```
-
-
-
-```
-python eval/run.py --scenarios office-sequence \
-    --trials 3 --label exp2-prompt-planner --max-iterations 100 \
-    --system-prompt "Sos un agente que resuelve puzzles tipo escape-room explorando una sala con herramientas (look/examine/take/use/go). Antes de actuar, descomponé el objetivo en una lista corta de sub-metas ordenadas y perseguilas una por una en ese orden; no actúes de forma puramente reactiva paso a paso."
-
-```
-
-```
-python eval/run.py --scenarios all --trials 3 --label iterations_100
---max-iterations 100
-```
-mismo dataset y `--trials` que la baseline, Bedrock
-`amazon.nova-lite-v1:0`, 24 casos, 471.1s total (vs. 221.5s de la baseline
-— el doble de tiempo, ver nota de costo abajo).
-
-**Nota**: esta primera corrida (resultados en
-`eval/results/iterations_100-buggy/`) tenía activo el bug de la ventana
-deslizante descripto más abajo — 12 de los 24 casos murieron con un error
-de Bedrock a mitad de camino, así que estos números subestiman lo que el
-agente puede lograr con 100 pasos. Quedan igual como registro de lo que
-mostró la corrida que originó el hallazgo del bug; la sección "Confirmación
-post-fix" más abajo trae la corrida limpia con el fix aplicado, que es la
-que hay que leer como resultado final del experimento.
-
-| Escenario | Success (`max_iter=10`) | Success (`max_iter=100`) | Δ | Calls media (100) / óptimo | Paso medio de meta (100) |
-|---|---:|---:|---:|---:|---:|
-| study-with-key | 100% | 100% | = | 5.3 / 3 | 5.3 |
-| color-locks | 0% | 0% | = | 26.0 / 11 | — |
-| library-search | 0% | 33% | **+33** | 17.0 / 7 | 19.0 |
-| extreme-archive | 0% | 67% | **+67** | 24.3 / 4 | 24.0 |
-| apartment-keys | 0% | 100% | **+100** | 12.3 / 7 | 12.3 |
-| office-sequence | 0% | 0% | = | 20.7 / 13 | — |
-| vault-combination | 0% | 33% | **+33** | 27.7 / 21 | 28.0 |
-| backtracking-vault | 0% | 0% | = | 25.0 / 18 | — |
-| **TOTAL** | **12%** | **42%** | **+30** | — | — |
-
-**Confirma la hipótesis de la sección 5**: subir `max_iterations` de 10 a
-100 sin tocar nada más del agente casi cuadruplica el success rate global
-(12% → 42%). Tres lecturas puntuales:
-
-- **`apartment-keys` pasa de 0% a 100%**: el escenario que el enunciado
-  señala como prueba de memoria multi-sala se resuelve perfecto en cuanto
-  hay presupuesto de pasos — sugiere que el problema de M2 ahí no era la
-  memoria (`max_history_messages=50` de default nunca se acercó a
-  recortar nada en corridas de ~12 pasos), era pura y simplemente el techo
-  de `max_iterations=10`.
-- **`extreme-archive` pasa de 0% a 67% — hay que corregir la lectura de la
-  baseline**: en la sección 5 categoricé sus fallos como
-  `desborde_de_contexto` asumiendo que el escenario (diseñado para no
-  caber en ~16K tokens) rompía disciplina de tool-calling. Con más
-  presupuesto de pasos se resuelve la mayoría de las veces — así que el
-  fallo en la baseline era mayormente el mismo cuello de botella de pasos
-  que todo lo demás, no un problema de contexto per se. Eso sí, el costo
-  es brutal: 222.313 tokens de entrada promedio (vs. 39.364 en la
-  baseline, ~5.6x) — el escenario sigue siendo caro incluso cuando se
-  resuelve.
-- **`color-locks`, `office-sequence` y `backtracking-vault` siguen en 0%**
-  aun con 100 pasos disponibles: ahí el presupuesto de pasos no era (o no
-  era solo) el problema — son los candidatos naturales para los
-  experimentos 1 (memoria) y 2 (prompting/planificación) pendientes.
-
-**Costo de la variante**: más presupuesto de pasos no es gratis. Duplicó
-el tiempo total (221.5s → 471.1s) y en escenarios donde terminó gastando
-todos los pasos igual sin lograr la meta (`color-locks`: 26.0 calls media,
-más del doble del óptimo 11) el costo en tokens también se disparó sin
-ninguna mejora en success rate. Es un trade-off, no una mejora
-estrictamente gratuita.
-
-### Bug encontrado por el experimento: mensajes `tool` huérfanos en la ventana deslizante
-
-Los modos de fallo de esta corrida muestran algo que no estaba en la
-baseline: `fallo_llm_no_transitorio` en 12 de los 24 casos (0 en la
-baseline). Los 12 tienen el **mismo error exacto** de Bedrock:
+Subir `max_iterations` de 10 a 100 sin tocar nada más casi cuadruplica el
+success rate (12%→42% en la primera corrida). Pero la corrida con
+`max_iterations=100` destapó un bug real: 12/24 casos morían con
 
 ```
 ValidationException: The number of toolResult blocks at messages.1.content
 exceeds the number of toolUse blocks of previous turn.
 ```
 
-Esto es un bug real en `_windowed_messages` (`student_framework/agent.py`),
-no un problema del proveedor ni del modelo. La rama que ancla el último
-mensaje de usuario cuando la ventana "natural" lo dejaría afuera
-(necesaria justamente para conversaciones largas — exactamente lo que
-`max_iterations=100` produce) recorta `keep_after` con un slice de cola:
+**Causa** (`_windowed_messages`, `student_framework/agent.py`): la rama que
+ancla el último mensaje de usuario cuando la ventana natural lo dejaría
+afuera recortaba `keep_after` con un slice de cola que podía cortar *en
+medio* de un grupo `assistant(tool_calls=[...])` + sus `tool`, dejando un
+mensaje `tool` huérfano en `window[1]` — el chequeo existente solo miraba
+`window[0]`. Con conversaciones cortas (`max_iterations=10`) casi no había
+oportunidad de activar esa rama; con 100 se volvió común.
 
-```python
-after_user = history[last_user_idx + 1 :]
-keep_after = after_user[-(cap - 1) :] if cap > 1 else []
-window = [history[last_user_idx]] + keep_after
+**Fix**: `keep_after` descarta sus propios mensajes `tool` huérfanos
+iniciales antes de anteponer el mensaje de usuario anclado. Verificado con
+un repro exacto y un fuzz test de 2000 combinaciones aleatorias (0
+violaciones de la invariante "todo `tool` en la ventana tiene su
+`assistant.tool_calls` correspondiente antes en la misma ventana").
+Re-confirmado contra Bedrock: `fallo_llm_no_transitorio` pasó de 12/24 a
+0/24, y el success rate subió de 42% a 50%.
+
+**Costo de la variante**: no es gratis — duplicó el tiempo total (221.5s→
+471.1s en la primera comparación) y en escenarios que agotaban pasos igual
+sin lograr la meta, el costo en tokens se disparó sin mejora de éxito.
+
+### 4.2 Estrategia de prompting + presupuesto de historial
+
+Serie de corridas combinando `system_prompt` (genérico → prompt largo con
+reglas del mundo → prompt largo + registro de estado explícito) con
+`max_history_messages`/`max_iterations` crecientes (tabla completa en
+sección 3.1). Hallazgos:
+
+- El prompt largo **solo** importa una vez que hay presupuesto de pasos
+  suficiente (50+) — con `max_iterations=10` ningún prompt supera 17%.
+- El registro de estado explícito ("mantené una lista de salas
+  visitadas/objetos resueltos", "si repetís una acción que ya falló,
+  detenete") apunta directo a los dos modos de fallo dominantes una vez que
+  el presupuesto dejó de ser el cuello de botella:
+  `accion_repetida_fallida` y `perdida_de_mapa_multi_sala`.
+- Más presupuesto/historial no es monotónicamente mejor: entre las
+  variantes con `max_iterations` 50→100, el éxito global se mantuvo o bajó
+  levemente mientras el costo en tokens se disparó (312k vs. 134k de
+  entrada, un caso de `library-search` llegó a 676k tokens en un solo
+  trial) — evidencia de que el techo pasó a ser ciclos/repetición, no
+  presupuesto, motivando el experimento de la sección 4.5.
+
+### 4.3 Planner explícito vs. ReAct puro
+
+Dos corridas separadas por toda la serie de fixes de detección de ciclos
+de la sección 4.5 (misma config en ambas: prompt de registro de estado,
+`max_history_messages=100`, `max_iterations=100`, `--planner`):
+
+| Escenario | Dificultad | Planner v1 (sin fixes de ciclos) | Planner v7 (con fixes de ciclos) | `flat` v7 (sin planner, mismos fixes) |
+|---|---|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% |
+| color-locks | medium | 67% | 33% | 67% |
+| library-search | hard | 33% | **0%** | 67% |
+| extreme-archive | extreme | 100% | 100% | 100% |
+| apartment-keys | medium | 100% | 100% | 100% |
+| office-sequence | hard | 33% | 67% | 67% |
+| vault-combination | extreme | 33% | 67% | 67% |
+| backtracking-vault | extreme | 67% | 67% | 33% |
+| **TOTAL** | — | **67%** | **67%** | **75%** |
+
+El total agregado quedó empatado entre las dos corridas de planner
+(67%→67%), pero la composición se mueve en la misma dirección en ambas: el
+planner **ayuda** en escenarios de orden rígido/secuencial
+(`backtracking-vault`, `office-sequence`, `vault-combination` — mejoran o
+se mantienen altos en ambas corridas) y **perjudica** en el escenario de
+descubrimiento puro (`library-search`: "cuál de 8 libros" — empeora en las
+dos corridas, y en la segunda cae a 0%). Contra `flat` con el mismo código
+de detección de ciclos, el planner queda 8 puntos por debajo (67% vs 75%)
+y esa diferencia es casi enteramente `library-search` (0% vs 67%): la
+detección de ciclos no compensa ahí porque el agente con planner no queda
+atrapado en un patrón detectable — simplemente agota pasos probando libros
+sin converger, anclado a un plan generado antes de tener la información
+necesaria para hacerlo bien.
+
+**Conclusión**: anteponer un plan fijo de sub-metas ayuda cuando la
+dificultad central es el *orden* de las acciones, y perjudica cuando es
+*descubrir* información nueva sobre la marcha — confirmado dos veces con
+`n=3` cada vez, aunque las dos corridas difieren en el código de detección
+de ciclos del framework, así que no son la misma condición exacta y no
+deberían promediarse sin más.
+
+### 4.4 Subagentes — delegación de tools
+
+Instoria completa de implementación, incidente de costo, y cuatro rondas de
+fixes, cada una verificada con `MockLLMClient` antes de una corrida
+paga, y cada una confirmando exactamente el problema puntual que atacaba:
+
+**Incidente inicial — costo desbocado.** Primera corrida real: el caso más
+simple del dataset (`study-with-key`, óptimo 3 pasos) tardó 481.9s y agotó
+`max_iterations=100` sin responder. De 100 pasos del actor, 51 fueron
+`explorar_sala` — el agente nunca reconoció haber logrado el objetivo y
+quedó re-verificando el estado indefinidamente; en modo `subagent` cada
+re-chequeo dispara una corrida completa del explorador (~333k tokens solo
+en el explorador, para un escenario que se resuelve en 3 pasos).
+
+**Fix v1 (tope ciego)**: bajar `max_iterations` del explorador (8→4) +
+tope duro `max_calls=6`. Frenó el costo pero **rompió el experimento**:
+12% de éxito global — el tope no distingue "re-exploración inútil" de
+"el actor genuinamente necesita información nueva", y una vez agotado deja
+al actor completamente ciego el resto del `run()`.
+
+**Fix v2 (caché por firma de estado)**: reemplaza el tope por una regla
+más honesta — si el mundo no cambió desde la última exploración real, se
+devuelve el mismo resumen gratis; en cuanto algo cambia (`take`/`use`/`go`
+exitosos), la siguiente exploración vuelve a correr de verdad. Nunca deja
+al actor sin poder pedir el estado actual. Resultado: **29%** — mejoró el
+tiempo, pero expuso un problema de arquitectura, no de costo: el actor
+navega peor entre salas en `subagent` que en `flat`, y la calidad/formato
+del resumen del explorador variaba mucho entre invocaciones (a veces en
+inglés, con `<thinking>` filtrado, duplicado).
+
+**Fix de formato** (`EXPLORER_SYSTEM_PROMPT` con plantilla fija de 6
+líneas, español, sin razonamiento filtrado): **29%** de nuevo en el
+agregado, pero por razones distintas — `color-locks`/`apartment-keys`
+mejoraron, mientras `study-with-key` (100% en *todas* las corridas
+anteriores del proyecto) cayó a 33% por una **alucinación de inventario**:
+el explorador reportaba `Inventario: llave dorada` sin que el actor la
+hubiera tomado nunca, y el actor confiaba en ese texto.
+
+**Fix de verdad determinística** (`_apply_ground_truth`): las líneas
+`Inventario:`/`Cerraduras:` del resumen se recalculan siempre desde
+`world` en vez de confiar en el LLM explorador, porque son 100%
+derivables. `study-with-key` volvió a 100%, pero el total se mantuvo en
+**33%** — `apartment-keys` cayó a 0% por un problema no relacionado
+(90 repeticiones seguidas de `use` contra un objeto irrelevante, sin
+volver nunca a la sala correcta): el mismo patrón de `accion_repetida_fallida`
+que venía apareciendo desde la primera baseline, sin relación con
+inventario ni formato.
+
+**Fix de detección de ciclos** (sección 4.5, primera versión, período 1
+solo): **58%** — el salto más grande de toda la serie, y el único fix que
+atacó el loop del agente en sí en vez del contenido del resumen del
+explorador. `color-locks` y `apartment-keys` pasaron a 100% sin ningún
+otro cambio.
+
+**Escalada + generalización de período** (sección 4.5): bajó a **54%**, y
+la investigación de por qué (en vez de asumirlo como regresión) encontró
+un **falso positivo real**: `_is_looping` comparaba solo
+`(tool_name, tool_input)`, así que `go(direction="sur")` llamado varias
+veces con *resultados distintos* (backtracking legítimo por una cadena
+lineal de salas, exactamente el mecanismo que `backtracking-vault` exige)
+quedaba bloqueado igual. Corregido comparando también
+`(tool_output, error)` — con ese fix más `foco` en `explorar_sala`
+(permite pedirle al explorador examinar *un* objeto puntual en vez de
+barrer toda la sala, motivado porque `library-search` cayó a 0% sin
+relación con ciclos, solo por no poder apuntar a "cuál libro"): **58%**
+de nuevo, con `library-search` subiendo específicamente de 0% a 67% y
+`ciclo_escalado_abortado` bajando de 8 a 2 casos (confirmando que la
+mayoría de esos 8 eran el falso positivo, no ciclos genuinos).
+
+**Conclusión de la serie**: la brecha inicial entre `subagent` y `flat`
+(29% vs. 78%) resultó estar dominada por un bug de framework compartido
+por ambos modos (no cortar loops repetidos), no por la delegación en sí.
+Una vez corregido ese bug común, la brecha real se achicó a algo
+respetable (58% vs. 75-83%) — la lectura correcta no es "la arquitectura
+de subagentes es inviable", sino que separar "leer el mundo" de "decidir
+qué hacer" en dos agentes agrega una capa de indirección (verdad que hay
+que verificar, formato que hay que fijar, información que hay que poder
+apuntar con `foco`) sobre un modelo que de por sí ya tiene dificultad
+sosteniendo un plan multi-paso — y esa capa cuesta, pero no es el cuello
+de botella dominante que parecía al principio.
+
+### 4.5 Detección de ciclos en el loop del agente
+
+Motivado por `apartment-keys` cayendo a 0% en la sección 4.4 (90
+repeticiones de la misma acción sin variar) — el mismo patrón que
+`accion_repetida_fallida` venía señalando post-hoc desde la primera
+baseline, y que el prompt largo ya pedía explícitamente evitar sin éxito.
+Se atacó desde el framework en vez del prompt (ver sección 1.3.3 para el
+diseño). Cuatro iteraciones, cada una verificada con `MockLLMClient` y
+confirmada contra Bedrock:
+
+1. **Período 1 solo** (`max_consecutive_repeats=2`): bloquea una acción
+   idéntica repetida 3 veces. `subagent`: 33%→**58%** (el salto más grande
+   de esa serie). `flat`: sin cambio significativo (67%, dentro de
+   varianza) — revisando los casos fallidos de esa corrida, **cero pasos
+   bloqueados**, así que el fix no tuvo oportunidad de actuar: el patrón de
+   fallo dominante ahí era un ciclo de *período > 1* (re-examinar los mismos
+   8 libros de `library-search` en el mismo orden, sin repetir nunca la
+   misma llamada dos veces seguidas), fuera del alcance de la detección de
+   período 1.
+2. **Generalización a período 1-8** (`max_cycle_period=8`): detecta
+   bloques de cualquier longitud repetidos. `flat`: 67%→**83%**, el mejor
+   número de todo el proyecto con `n=3` — `library-search` llega a 100%,
+   confirmando directamente la hipótesis puntual. Límite encontrado:
+   `apartment-keys` (33%) mostró un trial con 86 de 100 pasos bloqueados
+   *consecutivamente* — el modelo recibía el aviso correctivo y volvía a
+   pedir la misma acción bloqueada, sin usar la pista para cambiar de
+   estrategia.
+3. **Escalada** (`max_blocked_repeats=5`): si el bloqueo se sostiene más de
+   5 veces sin ninguna ejecución real en el medio, `run()` corta la
+   ejecución en vez de seguir agotando pasos sin chance real. Confirma la
+   hipótesis de `apartment-keys`: 33%→**100%**. Pero expuso el falso
+   positivo de `go` documentado en la sección 4.4 (`backtracking-vault`
+   cayó a 0% en `flat`, aunque revisando los otros dos trials —que
+   corrieron los 100 pasos completos sin ninguna escalada y tampoco
+   llegaron a la meta— la escalada no fue la causa; es varianza en un
+   escenario ya de por sí volátil).
+4. **Fix del falso positivo**: comparar `(tool_output, error)` además de
+   `(tool_name, tool_input)` en el historial de pasos ya ejecutados, para
+   no bloquear una acción cuyo resultado real cambió entre invocaciones
+   "idénticas". `flat`: mismo 75% agregado, pero `backtracking-vault`
+   (el escenario exacto del hallazgo) mejora 0%→33% y
+   `ciclo_escalado_abortado` desaparece del todo (2→0) — la lectura
+   correcta no es "no sirvió", es que el resto del movimiento agregado
+   (ruido en `color-locks`/`office-sequence`, sin relación con `go`) se
+   canceló casi exactamente con la mejora real.
+
+**Conclusión**: de las tres extensiones de framework de esta entrega, la
+detección de ciclos fue la de mayor impacto medido — pasó `flat` de 67% a
+83% y `subagent` de 33% a 58% con el mismo mecanismo genérico, sin ninguna
+lógica específica del mundo de escape-rooms. Su límite más claro es que
+bloquear una acción repetida solo ayuda cuando el modelo tiene *otra* idea
+disponible; si no la tiene, solo cambia el modo de fallo (de agotar pasos
+repitiendo, a terminar antes por escalada), no lo elimina.
+
+### 4.6 La capa adaptativa contra un proveedor real: 58%, y un modo de fallo nuevo — parálisis por exploración redundante
+
 ```
-
-Si ese slice corta *en medio* de un grupo `assistant(tool_calls=[...])` +
-sus mensajes `tool` de respuesta, `keep_after` puede arrancar con un
-mensaje `tool` huérfano — su `tool_calls` correspondiente quedó afuera de
-la ventana. El chequeo que evita justo eso (`while window[0].get("role")
-== "tool"`) solo mira `window[0]`, que acá es el mensaje de usuario
-anclado (rol `"user"`), **no** `window[1]`, donde puede estar el huérfano.
-Bedrock lo rechaza porque ese turno tiene un `toolResult` sin `toolUse`
-que lo respalde.
-
-Reproducido de forma determinística, sin gastar nada, manipulando
-`agent._history` directamente:
-
-```python
-agent = MyAgent(llm_client=MockLLMClient([]), max_history_messages=4)
-agent._history = [
-    {"role": "user", "content": "user0"},
-    {"role": "assistant", "content": "", "tool_calls": [{"id": "c1", ...}, {"id": "c2", ...}]},
-    {"role": "tool", "tool_call_id": "c1", "content": "r1"},
-    {"role": "tool", "tool_call_id": "c2", "content": "r2"},
-    {"role": "assistant", "content": "", "tool_calls": [{"id": "c3", ...}]},
-    {"role": "tool", "tool_call_id": "c3", "content": "r3"},
-]
-agent._last_user_index = 0
-agent._windowed_messages()
-# -> [user0, tool(c2) <- huérfano, assistant(c3), tool(c3)]
-```
-
-`tool(c2)` queda en `window[1]` sin su `assistant(tool_calls=[c1,c2])`
-correspondiente — exactamente el patrón que Bedrock rechazó en producción.
-Con conversaciones cortas (baseline, `max_iterations=10`) casi no había
-oportunidad de que la ventana necesitara la rama de anclaje con un corte a
-mitad de grupo; con `max_iterations=100` se volvió común, por eso apareció
-recién acá. **Corregido** (ver `student_framework/agent.py`): `keep_after`
-ahora descarta sus propios mensajes `tool` huérfanos iniciales antes de
-anteponer el mensaje de usuario anclado, no solo se revisa `window[0]`.
-
-Verificado con dos capas, ninguna contra Bedrock: (1) el repro exacto de
-arriba ahora da `[user0, assistant(c3), tool(c3)]`, sin huérfano; (2) un
-fuzz test de 2000 combinaciones aleatorias de `max_history_messages` (1–8)
-y cantidad/tamaño de grupos `assistant(tool_calls)+tool` (0–6 grupos, 1–3
-calls cada uno), chequeando la invariante "todo mensaje `tool` en la
-ventana tiene su `assistant.tool_calls` correspondiente en algún punto
-anterior de esa misma ventana" — **0 violaciones**.
-
-### Confirmación post-fix contra Bedrock
-
-Re-corrida idéntica (`--scenarios all --trials 3 --label iterations_100
---max-iterations 100`) con el fix ya aplicado. Resultados en
-`eval/results/iterations_100/` (la corrida con bug quedó preservada en
-`eval/results/iterations_100-buggy/` como evidencia).
-
-| Escenario | Success (buggy) | Success (fix) | Calls media (fix) / óptimo | Paso medio de meta (fix) |
-|---|---:|---:|---:|---:|
-| study-with-key | 100% | 100% | 4.7 / 3 | 4.7 |
-| color-locks | 0% | 33% | 43.7 / 11 | 26.0 |
-| library-search | 33% | 67% | 46.0 / 7 | 18.5 |
-| extreme-archive | 67% | 33% | 9.3 / 4 | 23.0 |
-| apartment-keys | 100% | 67% | 40.7 / 7 | 11.0 |
-| office-sequence | 0% | 33% | 46.7 / 13 | 19.0 |
-| vault-combination | 33% | 33% | 95.3 / 21 | 29.0 |
-| backtracking-vault | 0% | 33% | 78.0 / 18 | 25.0 |
-| **TOTAL** | **42%** | **50%** | — | — |
-
-Modos de fallo (post-fix):
-
-| Categoría | apartment-keys | backtracking-vault | color-locks | extreme-archive | library-search | office-sequence | vault-combination | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `accion_repetida_fallida` | 1 | 2 | 1 | — | 1 | 1 | 1 | 7 |
-| `max_iterations_agotado` | 1 | 2 | 1 | — | 1 | 1 | 2 | 8 |
-| `perdida_de_mapa_multi_sala` | 1 | 1 | — | — | — | — | 2 | 4 |
-| `se_detuvo_sin_lograr_la_meta` | — | — | 1 | 2 | — | 1 | — | 4 |
-
-**El fix está confirmado en producción, no solo en el repro local**:
-`fallo_llm_no_transitorio` (el modo de fallo causado por el bug) aparecía
-en 12/24 casos en la corrida con bug y **no aparece ni una sola vez** en
-esta tabla. Eso solo, más allá del número de success rate, es la evidencia
-que buscábamos.
-
-Con el bug ya no interrumpiendo corridas a mitad de camino, el success
-rate total subió de 42% a 50% — pero conviene leer los cambios por
-escenario con cautela, no como una mejora limpia y uniforme:
-
-- **office-sequence resuelto por primera vez** (0% → 33%, y con la
-  secuencia en el orden correcto): la corrida con bug nunca le dio la
-  chance real de llegar tan lejos. Sigue siendo el escenario más difícil
-  de sostener (2/3 trials fallan igual, ahora por `accion_repetida_fallida`
-  y `se_detuvo_sin_lograr_la_meta`, no por el bug) — buen candidato para el
-  experimento 2 (prompting/planificación) pendiente.
-- **`extreme-archive` bajó de 67% a 33%**: con el bug corregido, las
-  corridas duran más y exploran más — pero eso no es estrictamente mejor
-  para este escenario en particular; con la variancia de solo 3 trials por
-  celda, no se puede distinguir todavía si es ruido del LLM (no
-  determinístico) o un efecto real de que conversaciones más largas
-  compiten peor en este escenario puntual. No alcanza para una conclusión
-  firme con esta muestra.
-- **`apartment-keys` bajó de 100% a 67%**: mismo caveat de tamaño de
-  muestra (n=3) — no hay evidencia de que el fix en sí perjudique este
-  escenario, es más consistente con variancia entre corridas separadas del
-  LLM.
-- **Costo de arreglar el bug**: antes, un caso que chocaba con la
-  excepción de Bedrock terminaba ahí, gastando menos tokens/tiempo (por
-  las razones equivocadas). Con el fix, los casos corren su presupuesto
-  completo con más frecuencia: el tiempo total subió de 471.1s a 1224.9s
-  (2.6x) y escenarios como `vault-combination` pasaron de ~21.7k a ~293k
-  tokens de entrada promedio. Corregir el bug fue estrictamente necesario
-  para que el experimento midiera lo que dice medir, pero también
-  encareció bastante la corrida — un costo real a tener en cuenta antes de
-  correr los experimentos 1 y 2 con `max_iterations` alto.
-
-### Mejor corrida encontrada: prompt largo con registro de estado explícito (`long-prompt-estado-t5-h-100-i-100`)
-
-Tras el fix de la sección anterior, se corrieron variantes combinando
-`max_history_messages`/`max_iterations` más altos con un `system_prompt`
-progresivamente más largo (línea de tiempo completa, corrida por corrida,
-en `resumen-informe-m3.md`). Los fallos dominantes en esa serie fueron
-`accion_repetida_fallida` y `perdida_de_mapa_multi_sala`: el agente ya
-tenía presupuesto de pasos, pero perdía el hilo del estado en escenarios
-multi-sala y repetía acciones que ya habían fallado. La última iteración
-del prompt (`prompts/long_prompt_estado.txt`) agrega una sección explícita
-de **registro de estado** ("mantené una lista de salas visitadas/objetos
-resueltos", "antes de cada `go`, repasá esa lista", "si estás repitiendo
-una acción que ya falló, detenete y probá otra distinta") apuntada
-directamente a esos dos modos de fallo.
-
-```
-python eval/run.py --scenarios all --trials 5 \
-    --label long-prompt-estado-t5-h-100-i-100 \
+python eval/run.py --scenarios all --trials 3 --label adaptive-t3-h100-i100 \
     --max-iterations 100 --max-history-messages 100 \
-    --system-prompt-file prompts/long_prompt_estado.txt
+    --system-prompt-file prompts/long_prompt_estado.txt \
+    --agent-mode adaptive --adaptive
 ```
 
-Bedrock `amazon.nova-lite-v1:0`, 8 escenarios × 5 trials = 40 casos,
-4886.6s total. Es la corrida con más trials por escenario de toda la serie
-(5 en vez de 3), así que su número es también el más confiable frente al
-ruido de un LLM no determinístico.
+Bedrock `amazon.nova-lite-v1:0`, 24 casos, 1770.6s total.
 
 | Escenario | Dificultad | Trials | Success rate | Calls (media/óptimo) | Eficiencia | Paso medio de meta (éxitos) | Tokens in/out (media) | Latencia media (s) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| study-with-key | easy | 5 | 100% | 6.2 / 3 | 0.50 | 5.0 | 19077/325 | 8.3 |
-| color-locks | medium | 5 | 80% | 34.6 / 11 | 0.51 | 18.2 | 245261/2317 | 81.0 |
-| library-search | hard | 5 | 100% | 34.4 / 7 | 0.36 | 16.2 | 410370/1605 | 76.2 |
-| extreme-archive | extreme | 5 | 100% | 23.8 / 4 | 0.17 | 23.4 | 245517/1786 | 59.0 |
-| apartment-keys | medium | 5 | 80% | 33.4 / 7 | 0.37 | 16.8 | 171955/1938 | 70.2 |
-| office-sequence | hard | 5 | 100% | 100.6 / 13 | 0.13 | 23.0 | 632453/4859 | 249.3 |
-| vault-combination | extreme | 5 | 20% | 108.4 / 21 | 0.29 | 29.0 | 563692/5029 | 239.7 |
-| backtracking-vault | extreme | 5 | 40% | 72.6 / 18 | 0.34 | 31.5 | 446202/4176 | 193.4 |
-| **TOTAL** | — | 40 | **78%** | — | — | — | — | — |
+| study-with-key | easy | 3 | 100% | 8.3 / 3 | 0.39 | 4.7 | 27127/406 | 8.0 |
+| color-locks | medium | 3 | **100%** | 18.0 / 11 | 0.62 | 18.0 | 75475/1133 | 21.7 |
+| library-search | hard | 3 | 67% | 20.3 / 7 | 0.37 | 16.5 | 102796/1175 | 26.6 |
+| extreme-archive | extreme | 3 | 33% | 51.0 / 4 | 0.11 | 24.0 | 905330/2987 | 96.4 |
+| apartment-keys | medium | 3 | 100% | 12.7 / 7 | 0.57 | 12.7 | 49190/716 | 26.0 |
+| office-sequence | hard | 3 | 67% | 80.7 / 13 | 0.19 | 24.0 | 587803/4332 | 119.0 |
+| vault-combination | extreme | 3 | **0%** | 100.7 / 21 | 0.21 | — | 745869/5431 | 154.6 |
+| backtracking-vault | extreme | 3 | **0%** | 62.3 / 18 | 0.80 | — | 675753/4204 | 137.3 |
+| **TOTAL** | — | 24 | **58%** | — | — | — | — | — |
 
-Modos de fallo (solo casos fallidos, 9/40):
-
-| Categoría | apartment-keys | backtracking-vault | color-locks | vault-combination | Total |
-|---|---:|---:|---:|---:|---:|
-| `accion_repetida_fallida` | 1 | 3 | 1 | 3 | 8 |
-| `max_iterations_agotado` | 1 | 3 | 1 | 4 | 9 |
-| `perdida_de_mapa_multi_sala` | 1 | 2 | — | 3 | 6 |
-
-**Lectura:**
-
-- **6 de 8 escenarios al 100% o cerca** (`study-with-key`, `library-search`,
-  `extreme-archive` y `office-sequence` en 100%; `color-locks` y
-  `apartment-keys` en 80%). En particular `office-sequence` (goal
-  `sequence`, el caso que el enunciado plantea como "planner explícito vs.
-  ReAct puro") y `extreme-archive` (diseñado para desbordar el contexto)
-  quedan resueltos siempre — el registro de estado explícito más el
-  presupuesto de pasos alcanza para sostener ambos, sin necesitar un
-  planner separado.
-- **`vault-combination` es el peor resultado de toda la serie (20%)**, y
-  `backtracking-vault` tampoco pasa de 40%. Son justamente los dos
-  escenarios `extreme` con la cadena de dependencias más profunda (cerradura
-  multi-item, salidas gated, backtracking obligatorio). Sus fallos siguen
-  concentrados en `accion_repetida_fallida` y `perdida_de_mapa_multi_sala`
-  (9 de las 17 marcas de fallo entre ambos) pese a que el prompt les pide
-  explícitamente lo contrario — instruir al modelo a llevar un registro de
-  estado no alcanza cuando el estado real a trackear (3 núcleos combinables
-  entre 3 salas, o una llave final que desbloquea el cofre de la primera
-  sala) excede lo que el modelo sostiene de forma confiable en contexto.
-- **No es gratis.** Es, con diferencia, la corrida más cara de la serie:
-  `office-sequence` promedia 632k tokens de entrada y 249s de latencia por
-  caso (vs. 46.7k/47s en la corrida post-fix de `max_iterations=100` sin
-  prompt largo, sección anterior) para pasar de 33% a 100% de éxito.
-  `vault-combination` gasta un promedio similar de tokens (563k) sin
-  llegar a un resultado bueno (20%) — evidencia de que, para los dos
-  escenarios más profundos, el cuello de botella ya no es presupuesto ni
-  prompt, sino la capacidad del modelo de sostener ese estado en contexto.
-- **Frente a la corrida previamente mejor** (`long-prompt-hist-100` en
-  `resumen-informe-m3.md`, 83% pero sobre solo 3 trials y con
-  `max_history_messages=200`), esta corrida usa menos historial (100) y más
-  trials (5), y da un número algo más bajo (78%) pero más confiable — la
-  diferencia es consistente con varianza de muestra chica más que con una
-  regresión real, dado que además resuelve escenarios (`office-sequence`,
-  `extreme-archive`) que aquella corrida no llevaba al 100%.
-
-## 5. Resultados
-
-Baseline: `python eval/run.py --scenarios all --trials 3 --label baseline`,
-config default (`max_iterations=10`, `max_history_messages=50`), Bedrock
-`amazon.nova-lite-v1:0`, 24 casos, 221.5s total. Corrida dos veces (la
-segunda ya con tracking de `goal_achieved_at_step` agregado, ver sección
-"Herramienta de evaluación" más abajo) — el patrón se sostiene idéntico
-entre ambas corridas, así que no es un fluke de una tirada particular.
-
-| Escenario | Dificultad | Trials | Success rate | Calls (media/óptimo) | Eficiencia | Paso medio de meta (éxitos) | Tokens in/out (media) | Latencia media (s) |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| study-with-key | easy | 3 | 100% | 5.0 / 3 | 0.62 | 5.0 | 9423/285 | 4.9 |
-| color-locks | medium | 3 | 0% | 13.0 / 11 | 0.93 | — | 22045/766 | 10.4 |
-| library-search | hard | 3 | 0% | 10.0 / 7 | 0.70 | — | 26115/724 | 9.9 |
-| extreme-archive | extreme | 3 | 0% | 10.0 / 4 | 0.40 | — | 39364/1115 | 12.9 |
-| apartment-keys | medium | 3 | 0% | 10.0 / 7 | 0.70 | — | 20160/537 | 8.7 |
-| office-sequence | hard | 3 | 0% | 10.0 / 13 | 1.30 | — | 20513/549 | 8.4 |
-| vault-combination | extreme | 3 | 0% | 10.3 / 21 | 2.04 | — | 21464/584 | 9.4 |
-| backtracking-vault | extreme | 3 | 0% | 10.0 / 18 | 1.80 | — | 20643/587 | 9.0 |
-| **TOTAL** | — | 24 | **12%** | — | — | — | — | — |
-
-`study-with-key` es, por ahora, el único escenario con éxitos — su columna
-"paso medio de meta" (5.0) coincide exactamente con "calls media" (5.0):
-el agente no hace ninguna acción de más después de abrir la puerta, se
-detiene apenas cumple el objetivo. El resto muestra "—" porque
-`goal_achieved_at_step` solo tiene sentido sobre trials exitosos.
+Costo oculto del explorador: 70 llamadas, 346.301 tokens de entrada, 20.014
+de salida — mucho más bajo que las corridas de `subagent` puro (sección
+4.4, 136-232 llamadas), consistente con que acá el explorador es una
+opción entre varias, no la única vía de información.
 
 Modos de fallo:
 
-| Categoría | apartment-keys | backtracking-vault | color-locks | extreme-archive | library-search | office-sequence | vault-combination | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `accion_repetida_fallida` | — | 1 | — | — | — | — | — | 1 |
-| `desborde_de_contexto` | — | — | — | 3 | — | — | — | 3 |
-| `max_iterations_agotado` | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 21 |
-| `perdida_de_mapa_multi_sala` | — | 1 | — | — | — | — | — | 1 |
+| Categoría | backtracking-vault | extreme-archive | library-search | office-sequence | vault-combination | Total |
+|---|---:|---:|---:|---:|---:|---:|
+| `accion_repetida_fallida` | 3 | 2 | 1 | 1 | 3 | 10 |
+| `ciclo_escalado_abortado` | 2 | 1 | — | — | — | 3 |
+| `desborde_de_contexto` | — | 1 | — | — | — | 1 |
+| `max_iterations_agotado` | 1 | 1 | — | 1 | 3 | 6 |
+| `perdida_de_mapa_multi_sala` | — | — | — | — | 3 | 3 |
 
-**Corrección aplicada al categorizador** (no requirió re-correr nada contra
-Bedrock, solo reprocesar los JSON ya guardados): las tools de `mia_world`
-señalan varios fallos devolviendo un string `"Error: ..."` como valor de
-retorno *normal* en vez de lanzar una excepción — p. ej. `go` contra una
-salida bloqueada por una puerta gated. Eso dejaba `AgentStep.error` en
-`None`, así que `accion_repetida_fallida` (que originalmente solo miraba
-ese campo) no detectaba estos casos. El caso que lo evidenció fue
-`backtracking-vault trial=2`: 4 llamadas a `go(direction="norte")`
-seguidas — las primeras 2 rebotan contra una puerta blindada bloqueada, la
-4ª por fin entra a la sala siguiente — que mi heurística de navegación
-etiquetaba como "perdió el mapa" cuando en realidad es "insistió con una
-salida bloqueada hasta destrabarla", un patrón bien distinto. Ahora
-`eval/failure_modes._step_failed` también cuenta como fallo un
-`tool_output` que empieza con `"Error:"`, no solo `AgentStep.error`.
+**58% total, el mismo número que `subagent`, pero por un motivo distinto.**
+`color-locks` mejora respecto a *todas* las demás arquitecturas (100%, vs.
+67% en `flat`/`subagent` y 33% en `planner`) y `apartment-keys` se sostiene
+en 100% — en esos dos, tener ambas rutas de exploración disponibles a la
+vez no perjudicó. Pero `vault-combination` y `backtracking-vault` —los dos
+escenarios `extreme` con la cadena de dependencias más profunda del
+dataset— caen a **0%**, el peor resultado de cualquier arquitectura para
+esos dos escenarios en toda la reentrega.
 
-**Hallazgo principal: el cuello de botella no es (mayormente) competencia del
-modelo, es el presupuesto de pasos.** `max_iterations=10` es el default
-heredado de M1/M2 (elegido ahí para que los tests de conformidad con mocks
-corran rápido) — nunca fue calibrado contra el `optimal` real de estos
-escenarios, que va de 3 (`study-with-key`) a 21 (`vault-combination`).
-`max_iterations_agotado` aparece en 21/24 casos (87.5%). Inspeccionando los
-casos crudos se ven dos patrones distintos detrás de esa misma categoría:
+**Revisando la transcripción cruda de `backtracking-vault_t2`** (100 pasos,
+sin éxito, sin escalada) aparece un patrón que no se había visto en
+ninguna corrida anterior — ni en `flat` (solo `look`/`examine`) ni en
+`subagent` puro (solo `explorar_sala`, sin alternativa):
 
-- **Corte limpio por presupuesto de rondas**: `office-sequence` y
-  `backtracking-vault` terminan con exactamente 10 `AgentStep` (una tool por
-  ronda de LLM) — el agente avanzaba de forma serial y razonable hacia la
-  meta (navegar, examinar, tomar la llave correcta) pero necesitaba 13–18
-  pasos y el loop corta a los 10 sin importar qué tan bien encaminado
-  estuviera.
-- **Ineficiencia real que agrava el corte**: `color-locks` ejecutó 24
-  `AgentStep` (el modelo pidió varios `tool_calls` por respuesta) en esas
-  mismas 10 rondas de LLM — más del doble del óptimo (11) — y aun así no
-  llegó a la meta. Ahí el problema no es solo el presupuesto: hay
-  exploración redundante real.
+```
+0.  explorar_sala {}
+1.  explorar_sala {"foco": null}
+2.  explorar_sala {"foco": null}
+3.  explorar_sala {"foco": null}
+4.  explorar_sala {"foco": null}
+5.  examine {"target": "cofre_antiguo"}
+6.  look {}
+7.  explorar_sala {"foco": null}
+8.  examine {"target": "puerta_principal"}
+9.  look {}
+10. examine {"target": "cofre_antiguo"}
+...
+94. examine {"target": "cofre_antiguo"}
+95. explorar_sala {"foco": null}
+96. examine {"target": "puerta_principal"}
+97. explorar_sala {"foco": null}
+98. examine {"target": "cofre_antiguo"}
+99. explorar_sala {"foco": null}
+```
 
-`study-with-key` (único éxito, 100%) es también el único escenario cuyo
-óptimo (3) cabe cómodamente dentro de 10 rondas incluso con margen para
-algún error — consistente con la hipótesis de que el techo de pasos, no la
-dificultad intrínseca del puzzle, explica la mayor parte del 88% de fallos.
+**Los 100 pasos completos son `explorar_sala`/`examine`/`look` — cero
+`take`, `use` o `go`.** El agente nunca intentó actuar; se quedó alternando
+entre las dos rutas de exploración (la directa y la delegada), re-leyendo
+la misma información una y otra vez sin nunca comprometerse a tomar un
+objeto, usarlo, o moverse de sala. La detección de ciclos (sección 4.5) no
+lo corta porque la secuencia no repite el mismo bloque corto de forma
+estricta (alterna targets distintos de `examine`, y `explorar_sala()`
+cacheado que en teoría da el mismo resultado se intercala con llamadas que
+sí varían) — evade la ventana de período 1-8 sin ser, en la práctica,
+ningún progreso real. `case_backtracking-vault_t0` muestra la variante más
+extrema: los 9 pasos hasta la escalada son **puro `explorar_sala`**, sin
+un solo intento de acción real antes de que la detección de ciclos corte
+la ejecución.
 
-**Esto reordena la prioridad de los experimentos** (sección 4): correr el
-experimento de ventana de historial o de prompting *bajo el mismo
-`max_iterations=10`* arriesga medir "¿cuántos pasos le quedaban antes de
-chocar con el techo?" en vez de la pregunta real de cada experimento. Antes
-de esos dos, conviene correr el experimento 3 (presupuesto de pasos) para
-establecer un `max_iterations` donde el agente pueda efectivamente terminar
-la mayoría de los escenarios, y recién ahí medir el efecto de historia y
-prompting sobre una base que no esté saturada por el corte de rondas.
+**Hipótesis, consistente con la evidencia disponible**: tener *dos* rutas
+redundantes para obtener la misma información de la sala (`look`/`examine`
+directas y `explorar_sala`, con o sin `foco`) le da al modelo una salida
+siempre disponible para "seguir juntando información" en vez de actuar con
+lo que ya tiene — un problema de arquitectura, no del contenido de lo que
+devuelve cada ruta (ambas reportan datos correctos; `_apply_ground_truth`,
+sección 1.3.2, sigue vigente en modo `adaptive`). Ni `flat` (una sola ruta
+de exploración) ni `subagent` puro (una sola ruta, sin alternativa directa)
+tienen esta salida de escape disponible, así que agotan la exploración
+razonable más rápido y se ven forzados a intentar acciones reales antes.
+No se confirmó con más casos (`n=3`) — es la lectura más consistente con
+la transcripción encontrada, no una certeza estadística.
 
-## 6. Limitaciones y próximos pasos
+`vault-combination` (0%, igual que en `subagent` puro, sección 4.4) parece
+ser el patrón ya documentado de pérdida de mapa multi-sala
+(`perdida_de_mapa_multi_sala` en los 3 trials, oscilación `look`/`go` sin
+converger) más que el patrón nuevo de arriba — no hay evidencia de
+alternancia `explorar_sala`/`examine` sin actuar en esos casos, el problema
+ahí es navegación, no parálisis exploratoria.
 
-- La rúbrica LLM-as-judge no es determinística; se reporta como referencia
-  cualitativa, no como métrica dura.
-- Las categorías de `failure_modes.py` son heurísticas basadas en texto de
-  error y conteos de acciones, no en una inspección semántica del `World` —
-  en particular `perdida_de_mapa_multi_sala` puede tener falsos positivos en
-  escenarios que requieren backtracking legítimo por diseño.
-- `build_agent` no filtra las tools de M1 (calculadora, lector de archivos,
-  portfolio) cuando corre contra el mundo simulado; queda como ruido
-  potencial en el tool-list que ve el LLM. No se resolvió porque el
+**Conclusión de este experimento (v1, sin poda)**: la capa adaptativa, tal
+como estaba implementada en esta corrida, no mejora sobre las
+arquitecturas fijas — empata con `subagent` (58%) y queda 17 puntos por
+debajo de `flat` (75%), con dos escenarios extreme en 0%. El hallazgo de
+valor no es "la capa no sirve", es específico y accionable: **registrar
+ambas rutas de exploración a la vez (`agent_mode="adaptive"`) puede
+introducir una salida de escape que no existe en `flat` ni en `subagent`
+puro** — el modelo puede posponer indefinidamente el momento de actuar
+porque siempre hay una forma más de "mirar de nuevo".
+
+**Fix aplicado (v2, sección 1.3.4)**: en vez de que el triage solo
+recomiende una ruta como texto, ahora **poda** del agente la ruta que no
+eligió (elimina la tool de `self._tools`/`self._schemas` apenas decide),
+cerrando esa salida de escape en cuanto arranca la conversación.
+Verificado con `MockLLMClient` (sección 1.3.4), y confirmado contra
+Bedrock — pero el resultado real fue **peor**, no mejor (sección 4.7).
+
+### 4.7 Confirmación del fix de poda contra Bedrock: 42%, peor que la v1 sin podar
+
+```
+python eval/run.py --scenarios all --trials 3 --label adaptive-t3-h100-i100-v2 \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado.txt \
+    --agent-mode adaptive --adaptive
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos, 763.9s total (mucho más rápido
+que la v1, 1770.6s — consistente con lo que se ve abajo: la mayoría de los
+trials cortan mucho antes de agotar `max_iterations`).
+
+| Escenario | Dificultad | v1 (§4.6, sin poda) | v2 (con poda) |
+|---|---|---:|---:|
+| study-with-key | easy | 100% | 100% |
+| color-locks | medium | **100%** | 67% |
+| library-search | hard | 67% | **100%** |
+| extreme-archive | extreme | 33% | 33% |
+| apartment-keys | medium | **100%** | 33% |
+| office-sequence | hard | 67% | **0%** |
+| vault-combination | extreme | 0% | 0% |
+| backtracking-vault | extreme | 0% | 0% |
+| **TOTAL** | — | **58%** | **42%** |
+
+Modos de fallo — `ciclo_escalado_abortado` sube de 3 (v1) a **11** (v2), y
+ahora coincide exactamente con `accion_repetida_fallida` categoría por
+categoría (11 y 11): en la v2, cuando algo sale mal, sale mal
+*rápido y por la misma razón* en vez de agotar el presupuesto de distintas
+formas.
+
+| Categoría | apartment-keys | backtracking-vault | color-locks | extreme-archive | office-sequence | vault-combination | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `accion_repetida_fallida` | — | 3 | 1 | 1 | 3 | 3 | 11 |
+| `ciclo_escalado_abortado` | — | 3 | 1 | 1 | 3 | 3 | 11 |
+| `fallo_llm_no_transitorio` | — | — | — | 1 | — | — | 1 |
+| `se_detuvo_sin_lograr_la_meta` | 2 | — | — | — | — | — | 2 |
+
+**Causa raíz, encontrada revisando `case_office-sequence_t0.json`** (10
+pasos, corte por escalada): el triage decidió `delegate_exploration_needed
+= True`, así que la poda dejó únicamente `explorar_sala` disponible (más
+`take`/`use`/`go`, que siguen siempre registradas). El modelo llama
+`explorar_sala()` **sin argumentos, 10 veces seguidas** — como el mundo no
+cambió entre llamadas, la caché por firma de estado (sección 1.3.2)
+devuelve el resumen idéntico cada vez, así que la 3ª repetición ya
+coincide con la definición exacta de ciclo período-1 y la detección la
+bloquea; a la 6ª vez bloqueada, escala y corta `run()`. El modelo nunca
+intentó `take`/`use`/`go` ni una vez.
+
+**Esto no es un caso aislado — es el patrón dominante.** Clasificando las
+24 transcripciones por qué ruta terminó usando cada trial (mirando si
+`explorar_sala` aparece entre los `AgentStep`, contra `look`/`examine`):
+
+| Ruta elegida por el triage | Trials | Éxitos |
+|---|---:|---:|
+| Delegada (`explorar_sala`, poda `look`/`examine`) | 20 | 6 (30%) |
+| Directa (`look`/`examine`, poda `explorar_sala`) | 4 | 4 (100%) |
+
+**El triage recomienda delegar en 20 de 24 trials (83%)** — casi siempre,
+independientemente de la dificultad real del escenario — y una vez que
+recomienda delegar, la poda lo vuelve **irreversible**: si la exploración
+delegada no alcanza para resolver el escenario (típicamente porque el
+modelo, como ya se documentó en la conclusión de la sección 4.4 para
+`subagent` puro, pierde el hilo de la navegación multi-sala cuando no
+tiene `look`/`examine` directos), no hay forma de volver atrás dentro de
+esa conversación. Los 4 casos con ruta directa son casi todos
+`study-with-key` (escenario de una sola sala, donde delegar no tendría
+sentido y el triage aparentemente lo nota bien) más un trial de
+`apartment-keys` que sale perfecto en 14 pasos.
+
+**Conclusión**: la poda (v2) no falló porque la idea de cerrar la ruta no
+elegida esté mal — falló porque **expuso, en vez de resolver, un problema
+más grande y ya conocido**: el triage tiene un sesgo fuerte hacia
+recomendar delegación (83% de los trials) sin que eso se corresponda con
+qué tan bien le va efectivamente a la exploración delegada en escenarios
+multi-sala (30% de éxito ahí, contra 100% en los pocos casos que
+quedaron con exploración directa). En la v1 (sin poda), ese mismo sesgo
+existía pero el modelo podía "escaparse" hacia `look`/`examine` cuando
+`explorar_sala` no alcanzaba — ineficiente (la parálisis de la sección
+4.6) pero no fatal. La poda cierra esa escapatoria antes de saber si la
+decisión del triage era buena, y cuando no lo es (la mayoría de las
+veces, en los escenarios más difíciles), el resultado es peor que dejarla
+abierta. En otras palabras: **el cuello de botella no era "dos rutas
+disponibles a la vez", era que el triage decide mal con qué frecuencia
+delegar** — podar solo cambia el costo de esa mala decisión, no la
+corrige. Una iteración que atacaría la causa real (no implementada):
+hacer la poda reversible — si tras N pasos con la ruta elegida no hubo
+ningún `take`/`use`/`go` real, reabrir la otra ruta en vez de mantener el
+compromiso inicial para siempre.
+
+### 4.8 `consultar_mapa` contra un proveedor real: casi no se usa sin mención explícita en el prompt
+
+Dos corridas con `--room-graph` (sección 1.3.5), mismo prompt de siempre
+(`prompts/long_prompt_estado.txt`, que **no menciona** `consultar_mapa` —
+la tool está registrada pero nada en el prompt le dice al modelo cuándo
+usarla):
+
+```
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-roomgraph \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado.txt --room-graph
+
+python eval/run.py --scenarios all --trials 3 --label adaptive-t3-h100-i100-roomgraph \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado.txt \
+    --agent-mode adaptive --adaptive --room-graph
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos cada una (1468.9s y 1241.0s).
+
+| Escenario | Dificultad | `flat` v7 (§4.5, sin mapa) | `flat` + mapa (§4.8) | `adaptive` v2 (§4.7, sin mapa) | `adaptive` + mapa (§4.8) |
+|---|---|---:|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% | 100% |
+| color-locks | medium | 67% | 67% | 67% | **100%** |
+| library-search | hard | 67% | 67% | **100%** | 33% |
+| extreme-archive | extreme | 100% | 100% | 33% | 67% |
+| apartment-keys | medium | 100% | **67%** | 33% | **0%** |
+| office-sequence | hard | 67% | 67% | **0%** | 33% |
+| vault-combination | extreme | 67% | **33%** | 0% | 0% |
+| backtracking-vault | extreme | 33% | 33% | 0% | 0% |
+| **TOTAL** | — | **75%** | **67%** | **42%** | **42%** |
+
+**El motivo del resultado no es que el mapa dé información mala — es que
+casi no se usó.** Contando invocaciones reales de `consultar_mapa`: **12
+llamadas en cada corrida, concentradas en 1 solo caso de las 24**
+(`backtracking-vault_t0` en `flat`, `backtracking-vault_t2` en
+`adaptive`) — 23 de los 24 casos de cada corrida no la llamaron ni una
+vez, incluidos los que más se habrían beneficiado
+(`apartment-keys_t0` en `flat`: 65 `go` sin un solo `consultar_mapa`;
+`vault-combination_t1`: 62 `go`, cero `consultar_mapa`). El 67%/42% de
+estas corridas es, en gran parte, la misma varianza de `n=3` sobre
+escenarios ya volátiles (`apartment-keys`, `vault-combination`) que se
+viene documentando en toda la reentrega, no un efecto real de la tool —
+porque la tool, en la práctica, no participó.
+
+En `adaptive` además se reconfirma exactamente el hallazgo de la sección
+4.7 sin relación con el mapa: el triage sigue delegando en 21 de 24 casos
+(87%), y varios trials de `apartment-keys`/`backtracking-vault` vuelven a
+mostrar el patrón de spam de `explorar_sala` idéntico cortado por
+escalada en menos de 20 pasos — `consultar_mapa` sigue registrada y
+disponible en esos trials (la poda del triage solo afecta a
+`look`/`examine`/`explorar_sala`, nunca a `consultar_mapa`), pero como el
+prompt no la menciona, tampoco se usa ahí para salir del atolladero.
+
+**Conclusión**: esta corrida no prueba ni refuta la hipótesis de que un
+mapa determinístico ayuda a la navegación — prueba que **una tool no
+mencionada en el prompt, sin importar cuán bien diseñada esté, compite
+mal por atención contra una lista larga de tools y no se usa**. Ya se
+preparó la variante de prompt que menciona `consultar_mapa` explícitamente
+(`prompts/long_prompt_estado_mapa.txt`, agrega tres menciones puntuales:
+que existe, que conviene llamarla antes de cada `go`, y que sigue haciendo
+falta trackear objetos aparte) — la comparación real queda pendiente de
+correr con esa variante.
+
+### 4.9 `flat` + mapa con el prompt que lo menciona: 88%, el mejor número del proyecto — pero con una causa que no es la que parece
+
+```
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-roomgraph-v2 \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos, 1169.5s total.
+
+| Escenario | Dificultad | `flat` v7 (§4.5, sin mapa) | `flat` + mapa, prompt viejo (§4.8) | `flat` + mapa, prompt nuevo (§4.9) |
+|---|---|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% |
+| color-locks | medium | 67% | 67% | 67% |
+| library-search | hard | 67% | 67% | **100%** |
+| extreme-archive | extreme | 100% | 100% | 100% |
+| apartment-keys | medium | 100% | 67% | 100% |
+| office-sequence | hard | 67% | 67% | 67% |
+| vault-combination | extreme | 67% | 33% | 67% |
+| backtracking-vault | extreme | 33% | 33% | **100%** |
+| **TOTAL** | — | **75%** | **67%** | **88%** |
+
+Modos de fallo — el más limpio de toda la reentrega, solo 3 categorías,
+ninguna nueva:
+
+| Categoría | color-locks | office-sequence | vault-combination | Total |
+|---|---:|---:|---:|---:|
+| `accion_repetida_fallida` | 1 | 1 | 1 | 3 |
+| `max_iterations_agotado` | 1 | 1 | 1 | 3 |
+| `perdida_de_mapa_multi_sala` | — | — | 1 | 1 |
+
+**Antes de atribuirle el salto al mapa, hay que mirar si de verdad se
+usó** — y acá la evidencia es incómoda. `consultar_mapa` se llamó **32
+veces, concentradas en solo 3 de los 24 casos** (`apartment-keys_t0`/`t1`,
+1 vez cada uno; `office-sequence_t0`, 30 veces). Más mención en el prompt
+que en la sección 4.8 (0 usos), pero lejos de "el modelo adoptó la tool
+como herramienta central".
+
+**`backtracking-vault` —el escenario que explica casi todo el salto
+(33%→100%)— tiene `consultar_mapa=0` en los 3 trials.** Es el mismo
+escenario que ya lleva cuatro lecturas distintas en `flat` a lo largo de
+toda esta entrega (33%/67%/0%/33%, ninguna con mapa) — con esta, son
+**cinco lecturas** (33/67/0/33/**100**), y la más alta de todas coincide
+con la corrida que menos la explica por el mecanismo que se estaba
+probando. La lectura más honesta no es "el mapa resolvió
+`backtracking-vault`", es que sigue siendo el escenario más volátil del
+proyecto y esta vez tocó una tirada muy buena — con `n=3`, no hay forma de
+distinguirlo de una mejora real del prompt reescrito (la sección
+"Registro de estado" cambió de redacción, no solo agregó menciones del
+mapa) sin correr más trials.
+
+**`library-search` sí mejora limpiamente (67%→100%)**, pero tampoco usó
+`consultar_mapa` ni una vez — `library-search` no es un escenario
+multi-sala (es una sola sala con 8 libros), así que la tool ni siquiera
+aplicaría ahí; la mejora es, otra vez, variedad de muestra o efecto del
+resto del prompt reescrito, no del mapa.
+
+**El único caso donde se usó de verdad y en volumen
+(`office-sequence_t0`, 30 llamadas) terminó fallando** —agotó
+`max_iterations` sin responder—, así que tampoco hay ahí evidencia de que
+usarla mucho garantice nada.
+
+**Conclusión, con la misma cautela que ya se aplicó varias veces en esta
+reentrega**: 88% es el mejor número registrado, pero **no hay evidencia
+en las transcripciones de que `consultar_mapa` sea la causa** — se usó en
+3 de 24 casos, y el escenario que más aportó a la suba (`backtracking-vault`)
+no la usó en absoluto. La hipótesis original (agregar un mapa
+determinístico ayuda a la navegación multi-sala) queda **no confirmada,
+no refutada**: la tool sigue sin adoptarse de forma consistente ni con
+mención explícita en el prompt, así que esta corrida no la pone a prueba
+de verdad, aunque el número total sea bueno. Haría falta o bien un prompt
+todavía más insistente (o una regla dura del framework que la llame
+automáticamente antes de cada `go`, en vez de depender de que el modelo
+elija hacerlo), o más trials para separar la varianza real del efecto
+puntual — ninguna de las dos se hizo en esta entrega.
+
+### 4.10 `adaptive` + mapa con el prompt que lo menciona: 54%, mejora modesta que tampoco es atribuible al mapa
+
+```
+python eval/run.py --scenarios all --trials 3 --label adaptive-t3-h100-i100-roomgraph-v2 \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado_mapa.txt \
+    --agent-mode adaptive --adaptive --room-graph
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos, 785.8s total.
+
+| Escenario | Dificultad | `adaptive` v2 (§4.7, sin mapa) | `adaptive` + mapa, prompt viejo (§4.8) | `adaptive` + mapa, prompt nuevo (§4.10) |
+|---|---|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% |
+| color-locks | medium | 67% | **100%** | 67% |
+| library-search | hard | **100%** | 33% | 67% |
+| extreme-archive | extreme | 33% | 67% | **100%** |
+| apartment-keys | medium | 33% | 0% | 67% |
+| office-sequence | hard | **0%** | 33% | 0% |
+| vault-combination | extreme | 0% | 0% | 0% |
+| backtracking-vault | extreme | 0% | 0% | 33% |
+| **TOTAL** | — | **42%** | **42%** | **54%** |
+
+Modos de fallo — `ciclo_escalado_abortado` sigue alto (9, en línea con las
+otras dos corridas con poda: 11 y 9):
+
+| Categoría | apartment-keys | backtracking-vault | color-locks | library-search | office-sequence | vault-combination | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `accion_repetida_fallida` | 1 | 2 | 1 | 1 | 3 | 3 | 11 |
+| `ciclo_escalado_abortado` | 1 | 2 | — | 1 | 3 | 2 | 9 |
+| `max_iterations_agotado` | — | — | — | — | — | 1 | 1 |
+| `perdida_de_mapa_multi_sala` | — | — | — | — | — | 1 | 1 |
+
+**54% es, de las tres corridas con poda (4.7/4.8/4.10), la mejor** —
+pero sigue 4 puntos por debajo de la v1 original sin podar (58%, sección
+4.6) y 34 puntos por debajo del mejor `flat` (88%, sección 4.9). El
+patrón de fondo, otra vez, no cambia: el triage sigue delegando en 17 de
+24 trials (71% — apenas menos que el 83-87% de las corridas anteriores,
+dentro de lo que podría ser ruido), la ruta delegada sigue rindiendo
+mucho peor que la directa (6/17 éxitos, 35%, contra 7/7, 100%), y
+`consultar_mapa` se usó **17 veces en solo 2 de los 24 casos** —
+prácticamente la misma tasa de adopción que en `flat` (sección 4.9, 3/24)
+pese a que el prompt es idéntico y sí la menciona explícitamente.
+
+`office-sequence_t0` (47 pasos, falla) usó `consultar_mapa` 12 veces
+combinado con `explorar_sala` — el mismo caso que en la sección 4.8 había
+usado la tool en volumen (30 veces) y también fallara: la evidencia
+disponible en dos corridas separadas apunta en la misma dirección, usar
+la tool mucho no correlaciona con resolver el escenario.
+
+**Conclusión**: la mejora de 42%→54% es consistente con las mismas dos
+explicaciones que la sección 4.9 ya identificó para `flat` (reescritura
+general del prompt + varianza de `n=3`), no con que el mapa haya
+resuelto el problema estructural documentado en la sección 4.7 — el
+sesgo del triage hacia delegar sigue ahí, casi sin cambios, y sigue
+siendo el factor dominante que separa a `adaptive` de `flat`/`planner`.
+`consultar_mapa` queda con el mismo diagnóstico que en `flat`: una tool
+bien diseñada que, sin una regla dura que fuerce su uso (en vez de
+depender de que el modelo la elija), no se adopta lo suficiente como
+para poner a prueba si efectivamente ayuda.
+
+### 4.11 `flat` con `go` envuelto (mapa incondicional): 71%, y una regresión real encontrada en la detección de ciclos
+
+```
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-roomgraph-v3 \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos. Con el fix de la sección 1.3.5
+(`go` envuelto: el mapa va incondicionalmente en cada movimiento, ya no
+depende de que el modelo llame `consultar_mapa` por su cuenta).
+
+| Escenario | Dificultad | `flat` v7 (§4.5, sin mapa) | `flat` + mapa opt-in (§4.9) | `flat` + `go` envuelto (§4.11) |
+|---|---|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% |
+| color-locks | medium | 67% | 67% | **100%** |
+| library-search | hard | 67% | **100%** | **33%** |
+| extreme-archive | extreme | 100% | 100% | 100% |
+| apartment-keys | medium | 100% | 100% | 67% |
+| office-sequence | hard | 67% | 67% | **100%** |
+| vault-combination | extreme | 67% | 67% | 33% |
+| backtracking-vault | extreme | 33% | **100%** | 33% |
+| **TOTAL** | — | **75%** | **88%** | **71%** |
+
+**`library-search` no tiene ninguna sala más allá de la inicial** (es el
+escenario de "1 de 8 libros", sin `go` registrado en absoluto) — su caída
+a 33% no puede tener nada que ver con el mapa; es la misma varianza de
+`n=3` sobre un escenario ya documentado como el más inestable de todo el
+proyecto (`resumen-informe-m3.md`: "oscila entre 0% y 100% sin tendencia
+clara"). Confirmado revisando el caso: 0 llamadas a `go` en los tres
+trials.
+
+**El hallazgo real, revisando `vault-combination_t0`** (105 pasos,
+`perdida_de_mapa_multi_sala`, falla): el agente hizo **88 llamadas a `go`
+alternando `norte`/`sur` sin parar**, y la detección de ciclos (sección
+1.3.3) **nunca la bloqueó ni una sola vez** — 0 pasos bloqueados, pese a
+ser exactamente el patrón que ese mecanismo está diseñado para cortar.
+
+Causa: `wrap_go_with_map` antepone el "Camino recorrido" completo (con
+repeticiones) a cada resultado de `go`, y esa línea **crece una sala más
+en cada llamada** — así que dos movimientos idénticos en la práctica
+(`norte` desde la misma sala, mismo resultado real) ya no producen el
+mismo `tool_output`, porque el mapa que los acompaña es distinto cada
+vez (el camino recorrido es más largo). `_is_looping` compara
+`(tool_output, error)` exacto (fix de falsos positivos, sección 4.5) —
+con el mapa creciendo sin límite, esa comparación deja de coincidir para
+siempre. Confirmado directamente: de las 88 llamadas a `go` de ese caso,
+**las 88 tienen un `tool_output` distinto entre sí** (antes de este
+cambio, dos `go(direction="norte")` desde la misma sala daban texto
+idéntico, que es justamente lo que permitía detectarlos como ciclo).
+
+**Esto es una regresión real introducida por el fix de la sección 1.3.5,
+no un hallazgo sobre si el mapa ayuda a la navegación** — invalida la
+comparación de la tabla de arriba para cualquier escenario donde antes la
+detección de ciclos hubiera cortado un loop de `go` (probablemente
+`vault-combination` y quizás parte de `apartment-keys`/`backtracking-vault`,
+los mismos escenarios que dependen de esa protección en las secciones
+4.5/4.7). No se puede leer el 71% como "peor que el 88% de la sección
+4.9 por culpa del mapa" hasta arreglar esto y volver a correr.
+
+**Fix aplicado**: `_build_map_text` acota el "camino recorrido" a una
+ventana de las últimas `_BREADCRUMB_WINDOW = 12` salas (constante en
+`room_graph.py`) en vez de la lista completa desde el inicio, con un
+indicador `"(...) -> "` cuando el camino real es más largo que la
+ventana. El resto del mapa (salas visitadas, salidas, edges confirmados)
+no necesitó cambios — ya era estable frente a la repetición, solo el
+breadcrumb crecía sin límite.
+
+Verificado con un `World` sintético de 2 salas, oscilando `norte`/`sur`
+40 veces seguidas (muy por encima de la ventana): los últimos 10
+resultados de `go(norte)` son **idénticos entre sí**, y lo mismo para
+`go(sur)` — la ventana se estabiliza exactamente como se esperaba,
+restaurando la comparación byte-a-byte que `_is_looping` necesita para
+volver a detectar este patrón. Confirmado también que con pocos
+movimientos (dentro de la ventana) no aparece el indicador de truncado, y
+que el resto del comportamiento de `_build_map_text` (edges confirmados,
+gates, sala única) sigue exactamente igual que antes del fix. Suite de
+conformidad: 78/78.
+
+**Pendiente**: repetir la corrida de la sección 4.11 (`flat` + `go`
+envuelto) con el fix aplicado para confirmar que la detección de ciclos
+efectivamente vuelve a cortar oscilaciones como la de `vault-combination_t0`,
+y recién ahí la corrida de `adaptive` + `go` envuelto que había quedado
+pospuesta.
+
+### 4.12 Confirmación contra Bedrock: la regresión está resuelta, pero el total sigue sin superar la baseline
+
+```
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-roomgraph-v4 \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos, 1478.7s total.
+
+| Escenario | Dificultad | `flat` v7 (§4.5, sin mapa) | `go` envuelto, con bug (§4.11) | `go` envuelto, fix aplicado (§4.12) |
+|---|---|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% |
+| color-locks | medium | 67% | 100% | 67% |
+| library-search | hard | 67% | 33% | 33% |
+| extreme-archive | extreme | 100% | 100% | 67% |
+| apartment-keys | medium | 100% | 67% | **33%** |
+| office-sequence | hard | 67% | 100% | 100% |
+| vault-combination | extreme | 67% | 33% | **67%** |
+| backtracking-vault | extreme | 33% | 33% | 33% |
+| **TOTAL** | — | **75%** | **71%** | **62%** |
+
+**Primero, la parte que confirma el fix**: revisando `vault-combination_t0`
+(el caso exacto donde se había encontrado la oscilación de 88 `go` sin
+bloquear ni uno, sección 4.11) — esta vez el patrón es distinto: el
+agente falla en usar una llave sobre una puerta (`llave_deposito` contra
+`puerta_deposito`, no encaja), y queda alternando `look`/`examine
+banco_herramientas` en su lugar. La detección de ciclos **sí interviene
+esta vez** (10 de sus pasos quedan bloqueados con el mensaje de patrón
+repetido). No es el mismo bug — es un fallo de razonamiento distinto
+(insistir con el objeto equivocado) que la detección de ciclos ya sabía
+manejar antes de tocar nada de esto. Revisando los casos con más
+navegación de toda la corrida (`office-sequence_t0`: 67 `go`, 13
+bloqueados; `backtracking-vault_t1`: 54 `go`, 11 bloqueados) — ninguno
+muestra el patrón "decenas de `go` sin un solo bloqueo" que caracterizaba
+la regresión; en todos, la detección corta en algún punto. La regresión
+de la sección 4.11 parece efectivamente resuelta, con la evidencia
+disponible en esta corrida.
+
+**Pero el total (62%) es el más bajo de toda la serie de `flat` + mapa**
+(88% → 71% → 62% en las tres variantes), por debajo incluso de la
+baseline sin mapa (75%). `vault-combination` se recupera a 67% (igual que
+la baseline, mejor que el 33% con el bug activo) — consistente con que
+arreglar la regresión ayudó específicamente ahí. Pero `apartment-keys`
+cae a 33% (el peor de toda la serie para ese escenario) y `extreme-archive`
+baja a 67% — ninguno de los dos tiene relación con `go` ni con el fix
+(`extreme-archive` no tiene navegación; `apartment-keys_t1`/`t2` fallan
+por loops de `look`/`examine`, no de `go`), consistente con la varianza
+de `n=3` que se viene documentando en toda la reentrega.
+
+**Conclusión de la serie 4.8 → 4.12**: se resolvió una regresión real de
+framework (la detección de ciclos volvió a funcionar correctamente para
+`go` bajo `--room-graph`), pero **en ninguna de las cinco corridas de
+esta serie hay evidencia consistente de que `consultar_mapa`/el `go`
+envuelto mejoren el resultado agregado** — los números van de 42% a 88%
+sin relación clara con cuánto se usó la tool ni con si el bug de ciclos
+estaba presente o no. La hipótesis original (un mapa determinístico
+ayuda a la navegación multi-sala) sigue **sin confirmarse**, ahora con
+más evidencia en contra que a favor: incluso con la tool garantizada en
+cada `go` y sin el bug de ciclos, el agregado no supera a `flat` sin
+mapa. Con el presupuesto de esta entrega, se documenta como un
+experimento cerrado con resultado negativo — igual que la capa
+adaptativa (sección 4.7) — más que como algo a seguir iterando sin una
+hipótesis nueva y concreta de por qué la próxima vuelta sí funcionaría.
+
+### 4.13 `remind_pending_failures` — smoke test en `color-locks`/`library-search`: el mecanismo no ataca la causa real
+
+```
+python eval/run.py --scenarios color-locks library-search --trials 3 --label remindfailures-smoke \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado.txt \
+    --remind-failures
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 6 casos, 370s total. Se corrió acotado a
+estos dos escenarios a propósito: ninguno tiene navegación (`go`), así que
+aísla el efecto de `remind_pending_failures` de cualquier interacción con
+`consultar_mapa`/`go` envuelto (secciones 4.8-4.12, ya cerradas).
+
+| Escenario | Dificultad | baseline `flat` sin remind (n=12, §4.2-4.5) | `remind_pending_failures` (n=3) |
+|---|---|---:|---:|
+| color-locks | medium | 83% (10/12) | 33% (1/3) |
+| library-search | hard | 75% (9/12) | 100% (3/3) |
+
+`library-search` no tuvo ninguna acción repetida en los 3 trials (0
+llamadas duplicadas), así que su 100% no dice nada sobre el mecanismo —
+no había nada que recordar. `color-locks` sí es informativo, y el
+resultado (33% vs. 83% de baseline) apunta a que el mecanismo no ayudó,
+aunque con `n=3` no alcanza para separar señal de ruido por sí solo. Lo
+que sí es concluyente es revisar las dos transcripciones que fallaron:
+
+**`color-locks_t1`** (falla real de `accion_repetida_fallida`, el caso
+que `remind_pending_failures` fue diseñado para atacar): el agente llama
+`use(llave_oro, puerta_principal)` y recibe `"Error: no llevas ningún
+'llave_oro'"` — la llave todavía está dentro del `cofre_verde`, recién
+abierto, nunca la tomó. Repite exactamente la misma llamada dos veces más
+(pasos 19, 21) y a la tercera la detección de ciclos la bloquea (paso
+23). Hasta acá, el recordatorio transitorio debería haber estado activo
+desde el segundo intento. Pero lo que sigue no es que el agente vuelva a
+tomar `llave_oro`: inventa un id inexistente (`llave_plateada`, en vez de
+`llave_plata`, el id real) y lo prueba contra `cofre_rojo`, `puerta_
+principal` y otros objetos varias veces más, además de reintentar
+`llave_roja`/`llave_verde` (ya gastadas) contra la puerta. Nunca vuelve a
+`take(llave_oro)`. El error que el mecanismo recuerda (`"no llevas
+ningún llave_oro"`) es literalmente la pista correcta — dice qué falta —
+pero el modelo no la interpreta como "andá a tomarlo", sino que sigue
+probando combinaciones nuevas. Repetir el mismo texto de error no aporta
+información que el modelo no tuviera ya en el turno inmediatamente
+anterior: el problema no es que se **olvide** del error (que es lo que
+`remind_pending_failures` soluciona), sino que no **infiere** la acción
+correctiva a partir de él.
+
+**`color-locks_t0`** (falla distinta, tampoco es el target del
+mecanismo): el agente sí completa la secuencia correcta —
+`take(llave_oro)` en el paso 19 tiene éxito — pero después de eso nunca
+vuelve a intentar `use(llave_oro, puerta_principal)`. En cambio entra en
+una racha de ~20 pasos alternando `look`/`examine` sobre objetos ya
+examinados, parcialmente cortada por la detección de ciclos (pasos 23 y
+33 bloqueados), hasta agotar el intento sin volver a la puerta. Acá no
+hay ninguna acción fallida repetida que recordar — la única llamada
+relevante (`take`) tuvo éxito — así que no hay nada que
+`remind_pending_failures` pueda inyectar: el `self._pending_failures` de
+esa clave ya está vacío en el momento en que hace falta. Es un modo de
+fallo nuevo, no cubierto por ningún mecanismo existente: "consiguió lo
+que necesitaba pero se distrajo antes de usarlo".
+
+**Conclusión**: con la evidencia de este smoke test, `remind_pending_
+failures` no muestra beneficio en el escenario donde sí había una acción
+repetida fallida real, y el motivo no es una falla de implementación
+(el mecanismo se comporta como se diseñó y se verificó con
+`MockLLMClient`) sino un desajuste de hipótesis: la mayoría de los
+`accion_repetida_fallida` observados en este dataset no son casos de
+"el agente olvidó que ya intentó esto", sino casos de "el agente no
+dedujo la corrección obvia a partir del mensaje de error" o "el agente
+abandonó una tarea a mitad de camino sin haber fallado nada". Ninguno de
+los dos se arregla con más memoria de errores pasados — necesitarían una
+intervención distinta (p. ej. que el propio mensaje de error sugiera la
+acción concreta, o detectar objetos en inventario sin usar). No se
+justifica gastar la corrida completa de 8 escenarios sin antes ajustar la
+hipótesis: se documenta como resultado negativo con esta muestra acotada,
+en vez de escalarlo a los 24 casos completos.
+
+### 4.14 `reflect_on_stall` — mismo smoke test: mejora en `color-locks`, pero no arregla la causa raíz cuando aparece de nuevo
+
+```
+python eval/run.py --scenarios color-locks library-search --trials 3 --label reflectonstall-smoke \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado.txt \
+    --reflect-on-stall
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 6 casos, 118s total.
+
+| Escenario | Dificultad | baseline sin mecanismo (n=12, §4.2-4.5) | `remind_pending_failures` (§4.13, n=3) | `reflect_on_stall` (n=3) |
+|---|---|---:|---:|---:|
+| color-locks | medium | 83% (10/12) | 33% (1/3) | **100% (3/3)** |
+| library-search | hard | 75% (9/12) | 100% (3/3) | 67% (2/3) |
+
+`color-locks` mejoró sobre la baseline y muy por encima del intento
+anterior con `remind_pending_failures` — con `n=3` no alcanza para
+confirmarlo solo, pero al menos no repite el patrón negativo de la
+sección 4.13. `library-search`, que en el smoke test anterior no tuvo
+ninguna acción repetida (nada que ninguno de los dos mecanismos pudiera
+afectar), esta vez sí falló un trial, y la transcripción es la evidencia
+más importante de esta sección — no porque el mecanismo lo haya causado,
+sino porque muestra sus límites reales.
+
+**`library-search_t2`**: el agente nunca llama `take` ni una sola vez en
+30 pasos — intenta `use(libro_geometria, caja_fuerte)` sin haberlo
+tomado (`"Error: no llevás ningún 'libro_geometria'"`, paso 10), y en vez
+de corregirlo entra en un ciclo de `examine` sobre `estanteria_alta`/
+`escritorio`/`caja_fuerte`/`puerta_principal` que se repite dos veces
+completas. Reconstruyendo la cuenta de "pasos sin novedad" paso a paso
+sobre esta transcripción (la llamada de reflexión en sí no queda
+guardada en el JSON de caso, solo se puede inferir de la aritmética):
+`_stall_streak` llega a 6 en el paso 18, así que `_reflect` **sí se
+disparó** una vez ahí. Pero el patrón de `examine` siguió exactamente
+igual en los pasos 19-23, hasta que la detección de ciclos (mecanismo
+distinto, preexistente) lo bloqueó a partir del paso 24 y cortó la
+ejecución en el paso 29 (6 bloqueos seguidos). La reflexión no evitó el
+corte ni hizo que el agente fuera a buscar el libro.
+
+Es exactamente el resultado que se anticipó en el diseño (sección 1.3.7):
+"es el mismo modelo que viene fallando en razonar el que tiene que
+auto-diagnosticarse, así que no hay garantía de que ayude". Acá hay
+evidencia directa de eso — el mecanismo se ejecutó como estaba diseñado
+(disparó una reflexión ante el estancamiento real), pero la reflexión en
+sí no fue suficiente para que el modelo corrigiera el mismo tipo de error
+("usar un objeto que no está en el inventario") que tampoco pudo corregir
+en la sección 4.13 con `remind_pending_failures`.
+
+**Conclusión**: con esta muestra, `reflect_on_stall` no es un reemplazo
+confiable de `remind_pending_failures` — en un caso ayudó (`color-locks`,
+n=3, sin confirmar) y en otro no evitó el mismo modo de fallo raíz
+("objeto no tomado antes de usarlo") pese a dispararse correctamente.
+Ambos mecanismos comparten el mismo techo: dependen de que el modelo,
+una vez que se le muestra el problema (ya sea como error repetido o como
+diagnóstico propio), sea capaz de inferir la corrección — y con
+`nova-lite` eso no está garantizado en ninguno de los dos formatos. No se
+escala a los 8 escenarios completos por la misma razón que en 4.13: antes
+de gastar una corrida completa hace falta una hipótesis que ataque la
+inferencia en sí, no solo la forma de presentar el problema.
+
+### 4.15 `flat` + mapa, quinta corrida (parte de la comparación de las 4 arquitecturas de la sección 0): confirma el resultado negativo, y con la evidencia más directa hasta ahora
+
+```
+python eval/run.py --scenarios all --trials 3 --label flat-t3-h100-i100-baseline-mapa \
+    --max-iterations 100 --max-history-messages 100 \
+    --system-prompt-file prompts/long_prompt_estado_mapa.txt --room-graph
+```
+
+Bedrock `amazon.nova-lite-v1:0`, 24 casos, 1600s total.
+
+| Escenario | Dificultad | `flat` v7 sin mapa (§4.5) | v2 (§4.9) | v3 (§4.11, bug) | v4 (§4.12, fix) | **v5 (esta corrida)** |
+|---|---|---:|---:|---:|---:|---:|
+| study-with-key | easy | 100% | 100% | 100% | 100% | 100% |
+| color-locks | medium | 67% | 67% | 100% | 67% | 100% |
+| library-search | hard | 67% | 100% | 33% | 33% | **33%** |
+| extreme-archive | extreme | 100% | 100% | 100% | 67% | 100% |
+| apartment-keys | medium | 100% | 100% | 67% | 33% | 67% |
+| office-sequence | hard | 67% | 67% | 100% | 100% | 67% |
+| vault-combination | extreme | 67% | 67% | 33% | 67% | 33% |
+| backtracking-vault | extreme | 33% | 100% | 33% | 33% | 33% |
+| **TOTAL** | — | **75%** | **88%** | **71%** | **62%** | **67%** |
+
+**El total (67%) sigue por debajo de la baseline sin mapa (75%)** — cuarta
+corrida de cinco en esta serie que no supera esa referencia (88% → 71% →
+62% → 67%), sin ninguna tendencia clara relacionada con el mapa en sí.
+
+**Pero el dato más contundente no es el total de esta corrida sola —
+es revisar `failure_modes` en las cinco corridas de la serie 4.8-4.15
+juntas**: `perdida_de_mapa_multi_sala` — el modo de fallo que
+`consultar_mapa`/el `go` envuelto fueron construidos específicamente para
+eliminar (ver motivación de la sección 1.3.5) — **aparece en las cinco**,
+sin excepción: 3 escenarios en la corrida original (§4.8), 1 en v2
+(§4.9, la de 88%), 3 en v3/bug (§4.11), 1 en v4/fix (§4.12) y 3 en esta
+v5. El fix de la sección 4.12 resolvió la regresión de detección de
+ciclos (`go` dejó de quedar ciego a oscilaciones), pero no tocó esto — y
+esto tampoco se explica por ese bug, porque persiste igual en las
+corridas donde el bug nunca estuvo presente (§4.8, v2). El mapa se
+garantiza en *cada* llamada a `go`, sin depender de que el modelo elija
+consultarlo, y aun así el modelo sigue perdiendo el hilo de qué sala ya
+recorrió. Es evidencia directa, no inferida, de que el problema no era
+(solo) que el agente no tuviera la información disponible — es que, aun
+teniéndola siempre delante, no siempre la usa para evitar volver a un
+lugar ya vaciado o para elegir mejor la próxima dirección. Es el mismo
+patrón de fondo que las secciones
+4.13/4.14 encontraron con `remind_pending_failures`/`reflect_on_stall`:
+mostrarle al modelo la información correcta (un error, un mapa, un
+diagnóstico) no garantiza que la incorpore a la decisión siguiente.
+
+**Conclusión**: no cambia el cierre ya documentado en la sección 4.12 —
+`consultar_mapa`/el `go` envuelto siguen sin mostrar una mejora agregada
+consistente, ahora con evidencia adicional (y más directa) de que ni
+siquiera resuelven de forma confiable el modo de fallo específico que los
+motivó. Se mantiene como experimento cerrado con resultado negativo.
+
+## 5. Limitaciones y qué construirían a continuación
+
+- **Varianza a `n=3`**: la mayoría de las corridas de esta entrega usan 3
+  trials por escenario para poder iterar rápido sobre el framework;
+  `backtracking-vault` en particular lleva **ocho** lecturas distintas en
+  `flat` a lo largo de todo el informe (33% en §4.5, 33% en §4.8, **100%**
+  en §4.9, 33% en §4.11, 33% en §4.12, 33% en §4.15, **0%** en la corrida
+  `-v8` sin mapa de la sección 0, 33% en la `-v8` con mapa) sin que ningún
+  cambio de config lo explique con confianza — el único 100% coincide,
+  además, con una corrida donde la tool que se estaba probando
+  (`consultar_mapa`) no se usó ni una vez en ese escenario, así que ni
+  siquiera tiene una explicación causal candidata. Antes de afirmar
+  cualquier conclusión puntual con seguridad (en especial la del planner,
+  sección 4.3, la comparación `subagent` vs. `flat`, sección 3.2, y el
+  88% de la sección 4.9) hace falta una corrida con más trials (5, como la
+  mejor corrida histórica) sobre los escenarios más volátiles en vez de
+  repetir los 8 completos.
+- **`vault-combination`** no se resolvió casi nunca en `subagent`: 0% en
+  7 de las 8 corridas de `subagent` documentadas en este informe
+  (incluida la más reciente, `subagent`+mapa de la sección 0, también
+  0%), la única excepción un 33% puntual — no hay un fix propuesto
+  todavía, más allá de que es, junto con `backtracking-vault`, el
+  escenario con la cadena de dependencias más profunda del dataset. Vale
+  la pena notar que en la ronda de la sección 0 tampoco lo resolvió
+  ninguna otra arquitectura (0-33% en las cinco), así que la dificultad
+  no parece específica de `subagent`.
+- **La rúbrica LLM-as-judge no es determinística**; se reporta como
+  referencia cualitativa, no como métrica dura.
+- **Las categorías de `failure_modes.py` son heurísticas** basadas en
+  texto de error y conteos de acciones, no en inspección semántica del
+  `World` — pueden tener falsos positivos/negativos, y de hecho varias
+  secciones de este informe documentan casos donde hubo que revisar la
+  transcripción cruda para no leer mal un número agregado.
+- **`build_agent` no filtra las tools de M1** cuando corre contra el mundo
+  simulado — ruido conocido en el tool-list, no resuelto porque el
   enunciado no pide especializar `build_agent` para M3.
-- El bug de la ventana deslizante (sección 4) solo se detectó porque
-  `max_iterations=100` generó conversaciones lo bastante largas como para
-  necesitar la rama de anclaje de `_windowed_messages` — con `n=3` trials
-  por escenario tampoco hay garantía de que no queden otros bugs de borde
-  sin activar. El fuzz test de 2000 casos cubre la invariante puntual del
-  bug encontrado, no todo el espacio de comportamiento del agente.
-- Próximo paso inmediato: correr los experimentos 1 (ventana de historial)
-  y 2 (prompting/planificación) — ahora sobre una base sin el bug de la
-  ventana, así que el efecto medido va a ser el de la variable del
-  experimento, no una mezcla con crashes de Bedrock. Dado el salto de costo
-  que trajo el fix (sección 4), conviene decidir con el usuario cuántos
-  escenarios/trials entran en cada uno antes de correrlos.
+- **El harness de timeout por caso (sección 1.2) tiene sus propios límites**:
+  usa `SIGALRM`, así que solo funciona en el hilo principal y en sistemas
+  POSIX (no Windows), y es de un solo disparo por caso — si el corte ocurre
+  durante la ejecución de una tool en vez de una llamada al LLM (`_execute_tool`
+  también atrapa cualquier excepción y la convierte en un error de paso en
+  vez de dejarla propagar), el `run()` seguiría consumiendo `max_iterations`
+  después sin un segundo aviso. No se activó ese camino en la práctica
+  (las tools del mundo son síncronas y rápidas), pero es una asimetría
+  conocida del diseño, no probada exhaustivamente.
+- **La capa adaptativa (secciones 1.3.4/4.6/4.7) no mejora sobre las
+  arquitecturas fijas en ninguna de sus dos versiones** — v1 (sin poda)
+  dio 58%, v2 (con poda de la ruta no elegida) dio **42%, peor todavía**.
+  El fix de la v2 atacó el síntoma correcto (parálisis alternando rutas)
+  pero expuso un problema más grande y ya conocido: el triage recomienda
+  delegar la exploración en el 83% de los trials (20/24), casi sin
+  correlación con la dificultad real del escenario, y esa exploración
+  delegada solo tiene 30% de éxito cuando se usa — contra 100% en los
+  pocos casos que quedaron con exploración directa. Podar vuelve esa
+  decisión sesgada **irreversible** dentro de la conversación, así que el
+  costo de una mala decisión del triage (frecuente) ya no tiene forma de
+  corregirse a mitad de camino. La causa raíz no es la disponibilidad de
+  tools, es que el triage decide mal con qué frecuencia conviene delegar.
+  Iteración futura razonable (no implementada): poda **reversible** — si
+  tras N pasos con la ruta elegida no hubo ningún `take`/`use`/`go` real,
+  reabrir la otra ruta en vez de mantener el compromiso inicial para
+  siempre. Con el presupuesto de esta entrega, se documenta como un
+  experimento concluido con resultado negativo en ambas variantes, no como
+  algo a seguir iterando sin una razón de peso para esperar que la
+  próxima iteración sí funcione.
+- **`consultar_mapa`/`go` envuelto (secciones 1.3.5, 4.8-4.12, 4.15)
+  tampoco mejora el agregado, en ninguna de sus variantes** — de opt-in
+  casi sin uso (42-88%, con el mejor número explicado por varianza, no
+  por la tool) a incondicional (71%, con una regresión real de framework
+  encontrada y corregida en el camino: `_is_looping` dejaba de detectar
+  oscilaciones de `go` porque el breadcrumb del mapa crecía sin límite) a
+  incondicional con el fix aplicado (62% en §4.12, 67% en §4.15 — el
+  total sigue por debajo de la baseline sin mapa en ambas). La corrida
+  original de `adaptive` + `go` envuelto con el fix aplicado
+  (`adaptive-t3-h100-i100-roomgraph-v4`, mismo prompt/config que §4.12
+  pero en modo `adaptive`) nunca se corrió; sí hay un dato más nuevo y
+  relacionado — `adaptive`+mapa de la sección 0 (label `-v8`, 46%, la
+  peor de las cinco arquitecturas de esa ronda) — pero no es la misma
+  corrida exacta, así que no cierra ese hueco puntual. Dado que ninguna
+  variante de `flat` mostró una mejora atribuible al mapa, y que
+  `adaptive`+mapa tampoco lo hizo, no hay una expectativa fuerte de que
+  correr la `-v4` original cambiaría la conclusión. Se documenta como un
+  segundo experimento cerrado con resultado negativo, con el valor real
+  en lo que enseñó sobre el propio framework (una tool nueva no se
+  adopta sin una regla dura que fuerce su uso, y envolver una tool fija
+  puede romper invariantes de otra parte del sistema de forma no obvia)
+  más que en la hipótesis original sobre navegación. `remind_pending_
+  failures` (§4.13) y `reflect_on_stall` (§4.14) también se probaron como
+  hipótesis distintas para el mismo problema de fondo y tampoco
+  mostraron una mejora confiable — ver sus secciones para el detalle de
+  por qué en cada caso.

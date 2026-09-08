@@ -1,0 +1,152 @@
+{
+  "label": "subagent-t3-h100-i100-mapa-v8",
+  "module": "student_framework",
+  "config": {
+    "max_history_messages": 100,
+    "max_iterations": 100,
+    "system_prompt": "Sos un agente que resuelve escape rooms textuales. Recibís una situación inicial y debés\nescapar (o cumplir el objetivo indicado) usando únicamente las herramientas disponibles:\n`look`, `examine`, `take`, `use`, `go` (esta última solo si hay salidas entre salas), y\n`consultar_mapa` (solo en escenarios con varias salas).\n\nReglas del mundo:\n- Los objetos tienen un `id` interno (p. ej. \"llave_oro\") que debés usar tal cual en las\n  llamadas a herramientas, no el nombre en lenguaje natural.\n- Muchos objetos son contenedores: podés no ver su contenido hasta examinarlos. Si un\n  contenedor está cerrado con llave, primero hay que abrirlo con `use`.\n- Algunos objetos están ocultos dentro de otros (p. ej. una llave bajo una alfombra, o\n  dentro de un cofre). No vas a poder tomarlos hasta examinar el contenedor que los oculta.\n- Las cerraduras pueden requerir un único ítem específico, o varias piezas distintas que\n  hay que colocar una por una con `use` antes de que se abran del todo — `examine` te dice\n  cuántas piezas faltan.\n- En escenarios con varias salas, `look` te muestra las salidas disponibles y si alguna\n  está bloqueada por una puerta/reja sin abrir. Movete con `go` usando la dirección exacta.\n- No asumas la estructura del mundo de antemano: explorá con `look` y `examine` antes de\n  actuar, y confirmá el efecto de cada acción con el texto que devuelve la herramienta.\n\nRegistro de estado (obligatorio en escenarios con varias salas):\n- Si tenés la herramienta `consultar_mapa` disponible, usala en vez de confiar en tu propia\n  memoria: te devuelve, sin margen de error, qué salas ya visitaste, el camino recorrido\n  hasta ahora, y para cada sala sus salidas — con el destino confirmado si ya la cruzaste,\n  o marcado \"destino sin confirmar\" si todavía no. Llamala antes de decidir un `go`,\n  especialmente si no estás seguro de qué salas ya visitaste o qué salidas ya probaste.\n- Además de `consultar_mapa`, mantené en tu propio razonamiento una lista explícita de qué\n  objetos viste en cada sala, cuáles ya examinaste/tomaste y cuáles seguís sin resolver\n  (p. ej. un contenedor cerrado del que todavía no tenés la llave) — eso `consultar_mapa`\n  no te lo dice, solo la topología de salas.\n- Antes de moverte con `go`, llamá a `consultar_mapa` (si está disponible) y repasá si ya\n  visitaste la sala de destino y qué encontraste ahí. No vuelvas a un lugar ya vaciado (todo\n  examinado, todo tomable ya tomado, ningún contenedor pendiente) a menos que tengas una\n  razón nueva y concreta para hacerlo — por ejemplo, un ítem nuevo en tu inventario que\n  podría servir con algo que viste ahí antes.\n- Si notás que estás repitiendo un camino o una acción que ya probaste sin éxito, es señal\n  de que perdiste el hilo del estado: detenete, consultá el mapa y tu lista de objetos, y\n  elegí una acción distinta a la que ya intentaste — no repitas la misma secuencia esperando\n  un resultado distinto.\n\nEstrategia:\n1. Empezá siempre con `look` para ver la sala, los objetos visibles y las salidas.\n2. Examiná cada objeto de interés (`examine`) antes de intentar tomarlo o usarlo — revela\n   contenido oculto y objetos escondidos.\n3. Tomá (`take`) todo objeto tomable relevante en cuanto sea visible.\n4. Usá (`use`) los objetos del inventario sobre cerraduras, puertas o contenedores cerrados\n   probando la combinación más lógica según nombres/colores/descripciones.\n5. Si una acción falla (mensaje de error), no la repitas igual: reinterpretá la pista y\n   probá otra combinación u objeto.\n6. Si hay varias salas, explorá metódicamente. Antes de cada `go`, consultá el mapa (ver\n   arriba): si ya visitaste esa sala y ya no tiene nada pendiente, no vuelvas sin una razón\n   nueva; si hace falta volver sobre tus pasos porque una puerta se desbloqueó desde otro\n   lado, hacelo, pero verbalizá por qué (qué cambió que ahora sí justifica volver).\n7. Seguí explorando y combinando objetos hasta lograr el objetivo (normalmente abrir la\n   puerta principal, aunque puede ser llegar a una sala, tener un ítem específico, o\n   cumplir varias condiciones en un orden determinado).\n\nNo inventes objetos ni acciones que no existan: si algo no aparece en `look`/`examine`, no\nexiste todavía. No declares el escenario resuelto en tu respuesta final hasta haber\nconfirmado el efecto (p. ej. \"Se abre\") en el resultado de una herramienta."
+  },
+  "agent_mode": "subagent",
+  "room_graph": true,
+  "case_timeout_seconds": null,
+  "trials_per_scenario": 3,
+  "wall_clock_seconds_total": 1689.932921041036,
+  "metrics": {
+    "overall": {
+      "trials_total": 24,
+      "success_rate": 0.7916666666666666,
+      "mean_efficiency_ratio": 0.5434300102834586,
+      "mean_input_tokens": 237540.95833333334,
+      "mean_output_tokens": 1714.4583333333333,
+      "mean_wall_clock_seconds": 70.39460217887729
+    },
+    "by_scenario": {
+      "study-with-key": {
+        "difficulty": "easy",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 15.666666666666666,
+        "optimal_calls": 3,
+        "mean_efficiency_ratio": 0.6083333333333333,
+        "mean_steps_to_goal": 3,
+        "mean_real_efficiency_ratio": 1.0,
+        "mean_input_tokens": 72578,
+        "mean_output_tokens": 814.3333333333334,
+        "mean_wall_clock_seconds": 19.48059633335409
+      },
+      "color-locks": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 18,
+        "optimal_calls": 11,
+        "mean_efficiency_ratio": 0.6162037037037037,
+        "mean_steps_to_goal": 18,
+        "mean_real_efficiency_ratio": 0.6162037037037037,
+        "mean_input_tokens": 72579,
+        "mean_output_tokens": 1288,
+        "mean_wall_clock_seconds": 35.064469500328414
+      },
+      "library-search": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 13,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.5930555555555556,
+        "mean_steps_to_goal": 13,
+        "mean_real_efficiency_ratio": 0.5930555555555556,
+        "mean_input_tokens": 54481.333333333336,
+        "mean_output_tokens": 730.6666666666666,
+        "mean_wall_clock_seconds": 50.42496304171315
+      },
+      "extreme-archive": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 16.666666666666668,
+        "optimal_calls": 4,
+        "mean_efficiency_ratio": 0.4494949494949495,
+        "mean_steps_to_goal": 16.333333333333332,
+        "mean_real_efficiency_ratio": 0.5606060606060606,
+        "mean_input_tokens": 72120.66666666667,
+        "mean_output_tokens": 1068.6666666666667,
+        "mean_wall_clock_seconds": 77.61782684766997
+      },
+      "apartment-keys": {
+        "difficulty": "medium",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 11.666666666666666,
+        "optimal_calls": 7,
+        "mean_efficiency_ratio": 0.6222222222222222,
+        "mean_steps_to_goal": 11.666666666666666,
+        "mean_real_efficiency_ratio": 0.6222222222222222,
+        "mean_input_tokens": 49064,
+        "mean_output_tokens": 709.3333333333334,
+        "mean_wall_clock_seconds": 24.391619235665228
+      },
+      "office-sequence": {
+        "difficulty": "hard",
+        "trials": 3,
+        "success_rate": 0.6666666666666666,
+        "mean_tool_calls_used": 37,
+        "optimal_calls": 13,
+        "mean_efficiency_ratio": 0.5698051948051949,
+        "mean_steps_to_goal": 26.5,
+        "mean_real_efficiency_ratio": 0.5629084967320261,
+        "mean_input_tokens": 260336.66666666666,
+        "mean_output_tokens": 2317.6666666666665,
+        "mean_wall_clock_seconds": 67.92838379166399
+      },
+      "vault-combination": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 0.0,
+        "mean_tool_calls_used": 100,
+        "optimal_calls": 21,
+        "mean_efficiency_ratio": 0.21,
+        "mean_steps_to_goal": null,
+        "mean_real_efficiency_ratio": null,
+        "mean_input_tokens": 1155235.6666666667,
+        "mean_output_tokens": 5176.333333333333,
+        "mean_wall_clock_seconds": 236.453525208286
+      },
+      "backtracking-vault": {
+        "difficulty": "extreme",
+        "trials": 3,
+        "success_rate": 1.0,
+        "mean_tool_calls_used": 28,
+        "optimal_calls": 18,
+        "mean_efficiency_ratio": 0.6783251231527093,
+        "mean_steps_to_goal": 28,
+        "mean_real_efficiency_ratio": 0.6783251231527093,
+        "mean_input_tokens": 163932.33333333334,
+        "mean_output_tokens": 1610.6666666666667,
+        "mean_wall_clock_seconds": 51.795433472337514
+      }
+    }
+  },
+  "failure_modes": {
+    "ciclo_escalado_abortado": {
+      "study-with-key": 1,
+      "office-sequence": 1
+    },
+    "accion_repetida_fallida": {
+      "study-with-key": 1,
+      "office-sequence": 1,
+      "vault-combination": 3
+    },
+    "max_iterations_agotado": {
+      "vault-combination": 3
+    },
+    "perdida_de_mapa_multi_sala": {
+      "vault-combination": 3
+    }
+  },
+  "explorer_cost": {
+    "total_calls": 182,
+    "total_input_tokens": 945494,
+    "total_output_tokens": 64244
+  }
+}

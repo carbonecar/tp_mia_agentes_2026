@@ -32,7 +32,7 @@ from mia_world.scenarios import list_scenarios  # noqa: E402
 from mia_world.state import Scenario  # noqa: E402
 
 from eval import failure_modes, metrics  # noqa: E402
-from eval.runner import run_suite  # noqa: E402
+from eval.runner import AGENT_MODES, run_suite  # noqa: E402
 
 DEFAULT_SCENARIOS_DIR = Path(__file__).resolve().parent.parent / "scenarios"
 DEFAULT_OUT_DIR = Path(__file__).resolve().parent / "results"
@@ -82,6 +82,14 @@ class EvalArgs:
     max_iterations: int | None
     system_prompt: str | None
     system_prompt_file: str | None
+    planner: bool
+    adaptive: bool
+    remind_failures: bool
+    reflect_on_stall: bool
+    stall_window: int | None
+    agent_mode: str
+    room_graph: bool
+    case_timeout_seconds: float | None
     judge: bool
 
     @classmethod
@@ -103,6 +111,100 @@ class EvalArgs:
             default=None,
             help="path a un .txt con el system prompt (p. ej. prompts/baseline_prompt.txt).",
         )
+        parser.add_argument(
+            "--planner",
+            action="store_true",
+            help=(
+                "activa la fase de planificación explícita (`MyAgent(planner=True)`): "
+                "antes de la primera respuesta, el agente descompone el objetivo en "
+                "sub-metas ordenadas vía `structured_call` (experimento 'planner "
+                "explícito vs. ReAct puro')."
+            ),
+        )
+        parser.add_argument(
+            "--agent-mode",
+            choices=AGENT_MODES,
+            default="flat",
+            help=(
+                "'flat' (default): un único agente decide look/examine/take/use/go. "
+                "'subagent': el agente solo decide take/use/go y delega look/examine "
+                "en un sub-agente 'explorador' aparte, vía la tool `explorar_sala` "
+                "(experimento de delegación de tools). "
+                "'adaptive': registra ambas rutas a la vez (look/examine directas Y "
+                "explorar_sala) — combinar con --adaptive para que el propio modelo "
+                "decida, por escenario, cuál usar."
+            ),
+        )
+        parser.add_argument(
+            "--adaptive",
+            action="store_true",
+            help=(
+                "activa la capa adaptativa (`MyAgent(adaptive=True)`): en vez de "
+                "planificar siempre (--planner) o nunca, la primera llamada dispara "
+                "una fase de triage donde el propio modelo evalúa la complejidad "
+                "aparente del objetivo y decide si conviene un plan de sub-metas y/o "
+                "delegar la exploración a `explorar_sala` (si está registrada — "
+                "combinar con --agent-mode adaptive para que lo esté). Tiene "
+                "precedencia sobre --planner si se pasan los dos."
+            ),
+        )
+        parser.add_argument(
+            "--room-graph",
+            action="store_true",
+            help=(
+                "agrega la tool `consultar_mapa` (sin LLM, sin costo): un mapa "
+                "determinístico de las salas ya visitadas y sus salidas, armado "
+                "directo desde el `World` (ver "
+                "`student_framework.tools.room_graph`). Independiente de "
+                "`--agent-mode`: se puede combinar con `flat`, `subagent` o "
+                "`adaptive` para comparar con/sin mapa en cualquiera de los tres."
+            ),
+        )
+        parser.add_argument(
+            "--remind-failures",
+            action="store_true",
+            help=(
+                "activa `MyAgent(remind_pending_failures=True)`: cada vez que una "
+                "tool falla, el error queda pendiente y se le recuerda al modelo en "
+                "cada turno siguiente (fuera del historial persistido) hasta que esa "
+                "misma acción se ejecute con éxito. Ataca los fallos repetidos "
+                "*no consecutivos* (que la detección de ciclos no corta, porque solo "
+                "bloquea repeticiones seguidas) — ver `INFORME_M3.md`."
+            ),
+        )
+        parser.add_argument(
+            "--reflect-on-stall",
+            action="store_true",
+            help=(
+                "activa `MyAgent(reflect_on_stall=True)`: cuando pasan "
+                "`--stall-window` pasos seguidos sin ningún resultado nuevo "
+                "(mismo criterio genérico, no reconoce texto de error de "
+                "`mia_world`), se dispara una llamada aparte donde el propio "
+                "modelo diagnostica el estancamiento y sugiere un próximo paso "
+                "concreto, inyectado como recordatorio transitorio. Ataca casos "
+                "que `--remind-failures` no cubre: el modelo no dedujo la "
+                "corrección de un error, o se distrajo después de un éxito sin "
+                "fallar nada — ver `INFORME_M3.md`."
+            ),
+        )
+        parser.add_argument(
+            "--stall-window",
+            type=int,
+            default=None,
+            help="pasos sin novedad seguidos que disparan una reflexión (default del framework: 6). Sin efecto sin --reflect-on-stall.",
+        )
+        parser.add_argument(
+            "--case-timeout-seconds",
+            type=float,
+            default=None,
+            help=(
+                "corta un caso individual si `agent.run()` no termina dentro de este "
+                "límite (harness de evaluación, ver `eval/runner.py::_case_time_limit`) "
+                "— el caso queda marcado como fallo (`caso_timeout_abortado`) pero la "
+                "suite sigue con el resto. Default: sin límite, como antes de este flag. "
+                "Solo tiene efecto en sistemas POSIX (usa SIGALRM)."
+            ),
+        )
         parser.add_argument("--judge", action="store_true", help="corre además el juez cualitativo (LLM-as-judge) por caso — costo extra.")
         ns = parser.parse_args(argv)
         return cls(**vars(ns))
@@ -123,6 +225,16 @@ def _build_config(args: EvalArgs) -> dict[str, Any]:
         if not path.is_file():
             raise SystemExit(f"No existe el archivo de system prompt: {path}")
         config["system_prompt"] = path.read_text(encoding="utf-8").strip()
+    if args.planner:
+        config["planner"] = True
+    if args.adaptive:
+        config["adaptive"] = True
+    if args.remind_failures:
+        config["remind_pending_failures"] = True
+    if args.reflect_on_stall:
+        config["reflect_on_stall"] = True
+    if args.stall_window is not None:
+        config["stall_window"] = args.stall_window
     return config
 
 def _build_judge_agent(args: EvalArgs) -> Any:
@@ -165,28 +277,55 @@ def main(argv: list[str] | None = None) -> int:
         case_path = out_dir / f"case_{case['scenario']}_t{case['trial']}.json"
         case_path.write_text(json.dumps(case, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    cases = run_suite(scenarios, module_name=args.module, config=config, trials=args.trials, on_case=on_case)
+    cases = run_suite(
+        scenarios,
+        module_name=args.module,
+        config=config,
+        trials=args.trials,
+        agent_mode=args.agent_mode,
+        include_room_graph=args.room_graph,
+        case_timeout_seconds=args.case_timeout_seconds,
+        on_case=on_case,
+    )
 
     elapsed = time.monotonic() - t0
     summary = metrics.aggregate(cases)
     failure_summary = failure_modes.summarize(cases)
+    explorer_cost_summary = metrics.aggregate_explorer_cost(cases)
 
     summary_json = {
         "label": args.label,
         "module": args.module,
         "config": config,
+        "agent_mode": args.agent_mode,
+        "room_graph": args.room_graph,
+        "case_timeout_seconds": args.case_timeout_seconds,
         "trials_per_scenario": args.trials,
         "wall_clock_seconds_total": elapsed,
         "metrics": summary,
         "failure_modes": failure_summary,
+        "explorer_cost": explorer_cost_summary,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary_json, indent=2, ensure_ascii=False), encoding="utf-8")
 
+    explorer_cost_line = (
+        f"\ncosto oculto del sub-agente explorador (no incluido en `input_tokens`/`output_tokens` de arriba): "
+        f"{explorer_cost_summary['total_calls']} llamadas, "
+        f"{explorer_cost_summary['total_input_tokens']} tokens de entrada, "
+        f"{explorer_cost_summary['total_output_tokens']} tokens de salida.\n"
+        if explorer_cost_summary is not None
+        else ""
+    )
+
+    timeout_note = f" · case_timeout_seconds: `{args.case_timeout_seconds}`" if args.case_timeout_seconds is not None else ""
+    room_graph_note = " · room_graph: `True`" if args.room_graph else ""
     markdown = (
         f"## Resultados — `{args.label}`\n\n"
-        f"config: `{config or '(default)'}` · módulo: `{args.module}` · "
+        f"config: `{config or '(default)'}` · agent_mode: `{args.agent_mode}` · módulo: `{args.module}`"
+        f"{room_graph_note}{timeout_note} · "
         f"{len(scenarios)} escenarios x {args.trials} trials · {elapsed:.1f}s total\n\n"
-        f"{metrics.to_markdown_table(summary)}\n\n"
+        f"{metrics.to_markdown_table(summary)}\n"
+        f"{explorer_cost_line}\n"
         f"### Modos de fallo\n\n{failure_modes.summary_to_markdown_table(failure_summary)}\n"
     )
     (out_dir / "summary.md").write_text(markdown, encoding="utf-8")

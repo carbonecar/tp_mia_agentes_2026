@@ -1,0 +1,655 @@
+{
+  "scenario": "extreme-archive",
+  "difficulty": "extreme",
+  "trial": 2,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 162.57629075000295,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "(el explorador no devolvió ningún resumen; puede haber agotado sus pasos. Esto sí es seguro:)\nInventario: vacío\nCerraduras: puerta principal [id: puerta_principal] requiere llave del archivo [id: llave_archivo]",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_2\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_2'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_3\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_3'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_4\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_4'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_5\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_5'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"expediente_1\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_1\", \"target\": \"expediente_1\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_2\", \"target\": \"expediente_2\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_2'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_2\", \"target\": \"expediente_2\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_2'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_2\", \"target\": \"expediente_2\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_2\", \"target\": \"expediente_2\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_3\", \"target\": \"expediente_3\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_3'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_3\", \"target\": \"expediente_3\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_3'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_3\", \"target\": \"expediente_3\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_3\", \"target\": \"expediente_3\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_4\", \"target\": \"expediente_4\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_4'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_4\", \"target\": \"expediente_4\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_4'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_4\", \"target\": \"expediente_4\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_4\", \"target\": \"expediente_4\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_5\", \"target\": \"expediente_5\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_5'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_5\", \"target\": \"expediente_5\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_5'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_5\", \"target\": \"expediente_5\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_5\", \"target\": \"expediente_5\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_6\", \"target\": \"expediente_6\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_6'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_6\", \"target\": \"expediente_6\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_6'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_6\", \"target\": \"expediente_6\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_6\", \"target\": \"expediente_6\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_7\", \"target\": \"expediente_7\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_7'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_7\", \"target\": \"expediente_7\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_7'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_7\", \"target\": \"expediente_7\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_7\", \"target\": \"expediente_7\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_8\", \"target\": \"expediente_8\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_8'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_8\", \"target\": \"expediente_8\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_8'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_8\", \"target\": \"expediente_8\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_8\", \"target\": \"expediente_8\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_9\", \"target\": \"expediente_9\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_9'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_9\", \"target\": \"expediente_9\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_9'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_9\", \"target\": \"expediente_9\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_9\", \"target\": \"expediente_9\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_10\", \"target\": \"expediente_10\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_10'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_10\", \"target\": \"expediente_10\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_10'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_10\", \"target\": \"expediente_10\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_10\", \"target\": \"expediente_10\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_11\", \"target\": \"expediente_11\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_11'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_11\", \"target\": \"expediente_11\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_11'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_11\", \"target\": \"expediente_11\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_11\", \"target\": \"expediente_11\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_12\", \"target\": \"expediente_12\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_12'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_12\", \"target\": \"expediente_12\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_12'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_12\", \"target\": \"expediente_12\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_12\", \"target\": \"expediente_12\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_13\", \"target\": \"expediente_13\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_13'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_13\", \"target\": \"expediente_13\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_13'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_13\", \"target\": \"expediente_13\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_13\", \"target\": \"expediente_13\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_14\", \"target\": \"expediente_14\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_14'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_14\", \"target\": \"expediente_14\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_14'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_14\", \"target\": \"expediente_14\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_14\", \"target\": \"expediente_14\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_15\", \"target\": \"expediente_15\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_15'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_15\", \"target\": \"expediente_15\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_15'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_15\", \"target\": \"expediente_15\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_15\", \"target\": \"expediente_15\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_16\", \"target\": \"expediente_16\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_16'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_16\", \"target\": \"expediente_16\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_16'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_16\", \"target\": \"expediente_16\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_16\", \"target\": \"expediente_16\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_17\", \"target\": \"expediente_17\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_17'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_17\", \"target\": \"expediente_17\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_17'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_17\", \"target\": \"expediente_17\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_17\", \"target\": \"expediente_17\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_18\", \"target\": \"expediente_18\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_18'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_18\", \"target\": \"expediente_18\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_18'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_18\", \"target\": \"expediente_18\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_18\", \"target\": \"expediente_18\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_19\", \"target\": \"expediente_19\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_19'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_19\", \"target\": \"expediente_19\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_19'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_19\", \"target\": \"expediente_19\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_19\", \"target\": \"expediente_19\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_20\", \"target\": \"expediente_20\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_20'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_20\", \"target\": \"expediente_20\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_20'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_20\", \"target\": \"expediente_20\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_20\", \"target\": \"expediente_20\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_1'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_1\", \"target\": \"expediente_1\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_1\", \"target\": \"expediente_1\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_2\", \"target\": \"expediente_2\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_2'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_2\", \"target\": \"expediente_2\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_2'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_2\", \"target\": \"expediente_2\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_2\", \"target\": \"expediente_2\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_3\", \"target\": \"expediente_3\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_3'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_3\", \"target\": \"expediente_3\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_3'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_3\", \"target\": \"expediente_3\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_3\", \"target\": \"expediente_3\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_4\", \"target\": \"expediente_4\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_4'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_4\", \"target\": \"expediente_4\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_4'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_4\", \"target\": \"expediente_4\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_4\", \"target\": \"expediente_4\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_5\", \"target\": \"expediente_5\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_5'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_5\", \"target\": \"expediente_5\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_5'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_5\", \"target\": \"expediente_5\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_5\", \"target\": \"expediente_5\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_6\", \"target\": \"expediente_6\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_6'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_6\", \"target\": \"expediente_6\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_6'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_6\", \"target\": \"expediente_6\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_6\", \"target\": \"expediente_6\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_7\", \"target\": \"expediente_7\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_7'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_7\", \"target\": \"expediente_7\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_7'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_7\", \"target\": \"expediente_7\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_7\", \"target\": \"expediente_7\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_8\", \"target\": \"expediente_8\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_8'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_8\", \"target\": \"expediente_8\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_8'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_8\", \"target\": \"expediente_8\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_8\", \"target\": \"expediente_8\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_9\", \"target\": \"expediente_9\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_9'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_9\", \"target\": \"expediente_9\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_9'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_9\", \"target\": \"expediente_9\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_9\", \"target\": \"expediente_9\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_10\", \"target\": \"expediente_10\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_10'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_10\", \"target\": \"expediente_10\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_10'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_10\", \"target\": \"expediente_10\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_10\", \"target\": \"expediente_10\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_11\", \"target\": \"expediente_11\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_11'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_11\", \"target\": \"expediente_11\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_11'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_11\", \"target\": \"expediente_11\"}",
+        "tool_output": null,
+        "error": "Ya intentaste exactamente esta misma acción ('use' con estos argumentos: {\"item\": \"expediente_11\", \"target\": \"expediente_11\"}) 2 veces seguidas — el resultado va a ser igual, no se ejecutó de nuevo. No la repitas: cambiá de estrategia (otro ítem, otro objetivo, u otra herramienta) antes de seguir."
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_12\", \"target\": \"expediente_12\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_12'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"expediente_12\", \"target\": \"expediente_12\"}",
+        "tool_output": "Error: no llevas ningún 'expediente_12'.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 739658,
+    "output_tokens": 7497
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:archivo"
+  ],
+  "agent_mode": "subagent",
+  "explorer_cost": {
+    "calls": 1,
+    "input_tokens": 14742,
+    "output_tokens": 419
+  }
+}

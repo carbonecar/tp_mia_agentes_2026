@@ -1,0 +1,84 @@
+{
+  "scenario": "library-search",
+  "difficulty": "hard",
+  "trial": 2,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": true,
+  "goal_reason": "puerta principal está abierta",
+  "goal_achieved_at_step": 8,
+  "wall_clock_seconds": 21.754368499969132,
+  "agent_result": {
+    "answer": "<thinking>The main door has been opened. I have successfully escaped the library.</thinking>",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": null}",
+        "tool_output": "<thinking>He examinado todos los objetos visibles y contenedores en la sala. Ahora debo compilar el resumen.</thinking>\n\nSala: Biblioteca del archivero\nSalidas: norte -> ninguna; sur -> ninguna; este -> ninguna; oeste -> ninguna\nObjetos visibles: escritorio (abierto); estantería alta (cerrada); caja fuerte (cerrada); puerta principal (cerrada)\nContenedores revelados: escritorio: vacío; estantería alta: libro_geometria, libro_alquimia, libro_filosofia, libro_historia, libro_jurisprudencia, libro_recetario, libro_genealogia, libro_sermones\nCerraduras: caja fuerte [id: caja_fuerte] requiere llave de la caja [id: llave_caja]; puerta principal [id: puerta_principal] requiere llave grabada [id: llave_grabada]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": null}",
+        "tool_output": "<thinking>He examinado todos los objetos y contenedores visibles en la sala. Ahora, debo compilar la información en el formato requerido.</thinking>\n\nSala: Biblioteca del archivero\nSalidas: norte -> estantería alta (abierta); centro -> escritorio (abierto); oeste -> caja fuerte (cerrada con llave); este -> puerta principal (cerrada)\nObjetos visibles: escritorio (abierto); estantería alta (abierta); caja fuerte (cerrada); puerta principal (cerrada); libro_geometria (abierto); libro_alquimia (abierto); libro_filosofia (abierto); libro_historia (abierto); libro_jurisprudencia (abierto); libro_recetario (abierto); libro_genealogia (abierto); libro_sermones (abierto)\nContenedores revelados: estantería alta: libro_geometria, libro_alquimia, libro_filosofia, libro_historia, libro_jurisprudencia, libro_recetario, libro_genealogia, libro_sermones; libro_sermones: llave_caja\nCerraduras: caja fuerte [id: caja_fuerte] requiere llave de la caja [id: llave_caja]; puerta principal [id: puerta_principal] requiere llave grabada [id: llave_grabada]\nInventario: vacío\n\nCompleté cada línea con lo que encontré, en ese orden, sin agregar secciones nuevas ni comentarios fuera de esas 6 líneas.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_caja\"}",
+        "tool_output": "Tomas llave de la caja.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_caja\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Usas llave de la caja con caja fuerte. Se abre.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": \"caja_fuerte\"}",
+        "tool_output": "Sala: Biblioteca del archivero\nSalidas: norte -> estantería alta (abierta); sur -> ninguna; este -> ninguna; oeste -> ninguna\nObjetos visibles: escritorio (cerrado); estanteria_alta (abierta); caja_fuerte (abierta); puerta_principal (cerrada); libro_geometria (abierto); libro_alquimia (abierto); libro_filosofia (abierto); libro_historia (abierto); libro_jurisprudencia (abierto); libro_recetario (abierto); libro_genealogia (abierto); libro_sermones (abierto)\nContenedores revelados: caja_fuerte: llave_grabada\nCerraduras: puerta principal [id: puerta_principal] requiere llave grabada [id: llave_grabada]\nInventario: llave de la caja [id: llave_caja]",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_grabada\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Error: no llevas ningún 'llave_grabada'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_grabada\"}",
+        "tool_output": "Tomas llave grabada.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_grabada\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Usas llave grabada con puerta principal. Se abre.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 31495,
+    "output_tokens": 501
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:biblioteca",
+    "take:llave_caja",
+    "open:caja_fuerte",
+    "take:llave_grabada",
+    "open:puerta_principal"
+  ],
+  "agent_mode": "adaptive",
+  "include_room_graph": true,
+  "explorer_cost": {
+    "calls": 3,
+    "input_tokens": 18110,
+    "output_tokens": 1368
+  }
+}

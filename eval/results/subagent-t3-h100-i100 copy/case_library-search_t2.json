@@ -1,0 +1,1825 @@
+{
+  "scenario": "library-search",
+  "difficulty": "hard",
+  "trial": 2,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 169.88330983300693,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "(el explorador no devolvió ningún resumen; puede haber agotado sus pasos)",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"estanteria\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"escritorio\"}",
+        "tool_output": "Error: escritorio no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"puerta\"}",
+        "tool_output": "Error: no existe ningún objeto con id 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"caja_fuerte\"}",
+        "tool_output": "Error: caja fuerte no es algo que puedas llevarte.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"estanteria\", \"target\": \"estanteria\"}",
+        "tool_output": "Error: no llevas ningún 'estanteria'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"puerta\", \"target\": \"puerta\"}",
+        "tool_output": "Error: no llevas ningún 'puerta'.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"caja_fuerte\", \"target\": \"caja_fuerte\"}",
+        "tool_output": "Error: no llevas ningún 'caja_fuerte'.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 617922,
+    "output_tokens": 9492
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:biblioteca"
+  ],
+  "agent_mode": "subagent",
+  "explorer_cost": {
+    "calls": 1,
+    "input_tokens": 4056,
+    "output_tokens": 209
+  }
+}

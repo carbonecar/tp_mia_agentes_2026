@@ -1,0 +1,511 @@
+<title>Sótano de Cofres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --stone: #34373d;
+    --stone-deep: #23252a;
+    --stone-line: #40434a;
+    --glow: #f0b95f;
+    --ink: #ece7d8;
+    --muted: #888c94;
+    --silver: #c9ced6;
+    --silver-lock: #9aa0a8;
+    --red: #b8493f;
+    --red-lock: #833229;
+    --green: #4f7d5c;
+    --green-lock: #365a41;
+    --blue: #3f6f92;
+    --blue-lock: #2b4e68;
+    --gold: #d6a94a;
+    --gold-dark: #a9823a;
+    --wood: #6b4a34;
+    --wood-dark: #4d3423;
+    --panel: #1c1d21;
+    --danger: #c96b5c;
+    --ok: #8fae7c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--stone-deep);
+    color: var(--ink);
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    display: flex;
+    justify-content: center;
+    padding: clamp(20px, 4vw, 48px) 16px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 880px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .eyebrow .goal {
+    color: var(--glow);
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: var(--stone);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 30px 60px -25px rgba(0,0,0,0.6);
+  }
+
+  .stage svg { width: 100%; height: 100%; display: block; }
+
+  .hot {
+    cursor: pointer;
+    transition: filter 120ms ease;
+  }
+  .hot:hover, .hot:focus-visible { filter: brightness(1.22); }
+  .hot:active { filter: brightness(0.8); }
+  .hot:focus-visible { outline: none; }
+  .hot:focus-visible rect,
+  .hot:focus-visible path,
+  .hot:focus-visible circle {
+    stroke: var(--glow);
+    stroke-width: 2px;
+  }
+
+  .hot.taken { opacity: 0; pointer-events: none; }
+  .hot.gone { display: none; }
+  .hot circle, .hot rect, .hot path, .hot line { pointer-events: all; }
+
+  .tag {
+    position: absolute;
+    pointer-events: none;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: rgba(20, 20, 23, 0.88);
+    border: 1px solid var(--stone-line);
+    padding: 3px 7px;
+    border-radius: 3px;
+    transform: translate(-50%, -130%);
+    opacity: 0;
+    transition: opacity 80ms ease;
+    white-space: nowrap;
+    z-index: 5;
+  }
+  .tag.show { opacity: 1; }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 18px 20px;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .panel .who {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .panel .msg {
+    font-size: 17px;
+    line-height: 1.5;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .panel .msg.ok { color: var(--ok); font-style: normal; font-weight: 500; }
+  .panel .msg.warn { color: var(--danger); }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .verbs {
+    display: flex;
+    gap: 6px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  .verb {
+    appearance: none;
+    border: 1px solid var(--stone-line);
+    background: var(--stone);
+    color: var(--muted);
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+  }
+  .verb:hover { color: var(--ink); }
+  .verb.active {
+    color: var(--stone-deep);
+    background: var(--glow);
+    border-color: var(--glow);
+  }
+  .verb:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+
+  .inventory {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+
+  .inventory .label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .slots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .slot {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    background: var(--stone);
+    border: 1px solid var(--stone-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot svg { width: 16px; height: 16px; }
+  .slot.empty { opacity: 0.35; }
+
+  .note {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--muted);
+    border-top: 1px solid var(--stone-line);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+  .note a, .note code {
+    color: var(--muted);
+    font-family: inherit;
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">
+    <span>M3 · mia_world · escenario 02 — sótano</span>
+    <span class="goal" id="goalTag">objetivo: abrir la puerta principal</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <svg viewBox="0 0 900 540" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sótano de piedra con una repisa, cuatro cofres de colores y una puerta con cerradura dorada">
+      <defs>
+        <radialGradient id="bulbGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#f0b95f" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#f0b95f" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <rect x="0" y="0" width="900" height="540" fill="var(--stone)"/>
+      <rect x="0" y="0" width="900" height="540" fill="url(#bulbGlow)"/>
+      <rect x="0" y="404" width="900" height="136" fill="var(--stone-deep)"/>
+      <rect x="0" y="404" width="900" height="2" fill="var(--stone-line)"/>
+
+      <!-- hanging bulb -->
+      <line x1="450" y1="0" x2="450" y2="118" stroke="var(--stone-line)" stroke-width="2"/>
+      <circle cx="450" cy="132" r="30" fill="var(--glow)" opacity="0.16"/>
+      <circle cx="450" cy="132" r="9" fill="var(--glow)"/>
+
+      <!-- shelf + silver key -->
+      <g>
+        <rect x="60" y="200" width="150" height="12" rx="3" fill="var(--stone-line)"/>
+        <rect x="70" y="212" width="14" height="150" fill="var(--stone-line)" opacity="0.5"/>
+        <rect x="166" y="212" width="14" height="150" fill="var(--stone-line)" opacity="0.5"/>
+        <g id="hot-llave_plata" class="hot" tabindex="0" role="button" aria-label="llave plateada" data-id="llave_plata" transform="translate(120,186)">
+          <circle r="20" fill="transparent"/>
+          <circle r="9" fill="none" stroke="var(--silver)" stroke-width="4"/>
+          <rect x="6" y="-2.5" width="16" height="5" fill="var(--silver)"/>
+          <rect x="18" y="-2.5" width="4" height="9" fill="var(--silver)"/>
+        </g>
+      </g>
+
+      <!-- chest template used 4x: plata, rojo, verde, azul -->
+      <g id="hot-cofre_plata" class="hot" tabindex="0" role="button" aria-label="cofre plateado" data-id="cofre_plata" transform="translate(300,420)">
+        <rect x="-55" y="-46" width="110" height="70" rx="8" fill="var(--silver)"/>
+        <rect x="-55" y="-46" width="110" height="16" rx="8" fill="#dfe3e8"/>
+        <circle cx="0" cy="-6" r="9" fill="var(--silver-lock)"/>
+      </g>
+
+      <g id="hot-cofre_rojo" class="hot" tabindex="0" role="button" aria-label="cofre rojo" data-id="cofre_rojo" transform="translate(430,420)">
+        <rect x="-55" y="-46" width="110" height="70" rx="8" fill="var(--red)"/>
+        <rect x="-55" y="-46" width="110" height="16" rx="8" fill="#c85a4f"/>
+        <circle cx="0" cy="-6" r="9" fill="var(--red-lock)"/>
+      </g>
+
+      <g id="hot-cofre_verde" class="hot" tabindex="0" role="button" aria-label="cofre verde" data-id="cofre_verde" transform="translate(560,420)">
+        <rect x="-55" y="-46" width="110" height="70" rx="8" fill="var(--green)"/>
+        <rect x="-55" y="-46" width="110" height="16" rx="8" fill="#5e8f6b"/>
+        <circle cx="0" cy="-6" r="9" fill="var(--green-lock)"/>
+      </g>
+
+      <!-- azul chest sits lower-left front row, no lock -->
+      <g id="hot-cofre_azul" class="hot" tabindex="0" role="button" aria-label="cofre azul" data-id="cofre_azul" transform="translate(180,470)">
+        <rect x="-48" y="-38" width="96" height="58" rx="7" fill="var(--blue)"/>
+        <rect x="-48" y="-38" width="96" height="14" rx="7" fill="#4f83a8"/>
+      </g>
+
+      <!-- door -->
+      <g id="hot-puerta_principal" class="hot" tabindex="0" role="button" aria-label="puerta principal" data-id="puerta_principal" transform="translate(790,300)">
+        <rect x="-70" y="-140" width="140" height="284" rx="4" fill="var(--wood)"/>
+        <rect x="-70" y="-140" width="140" height="284" rx="4" fill="none" stroke="var(--wood-dark)" stroke-width="6"/>
+        <circle cx="30" cy="0" r="16" fill="var(--gold)"/>
+        <rect x="21" y="-3" width="18" height="6" fill="var(--gold-dark)"/>
+      </g>
+
+      <!-- revealed keys / items appear here, positioned above their chest -->
+      <g id="hot-llave_roja" class="hot gone" tabindex="0" role="button" aria-label="llave roja" data-id="llave_roja" transform="translate(430,360)">
+        <circle r="18" fill="transparent"/>
+        <circle r="8" fill="none" stroke="var(--red)" stroke-width="3.5"/>
+        <rect x="5" y="-2" width="14" height="4" fill="var(--red)"/>
+      </g>
+      <g id="hot-llave_verde" class="hot gone" tabindex="0" role="button" aria-label="llave verde" data-id="llave_verde" transform="translate(560,360)">
+        <circle r="18" fill="transparent"/>
+        <circle r="8" fill="none" stroke="var(--green)" stroke-width="3.5"/>
+        <rect x="5" y="-2" width="14" height="4" fill="var(--green)"/>
+      </g>
+      <g id="hot-llave_oro" class="hot gone" tabindex="0" role="button" aria-label="llave dorada" data-id="llave_oro" transform="translate(300,360)">
+        <circle r="18" fill="transparent"/>
+        <circle r="8" fill="none" stroke="var(--gold)" stroke-width="3.5"/>
+        <rect x="5" y="-2" width="14" height="4" fill="var(--gold)"/>
+      </g>
+      <g id="hot-trapo_viejo" class="hot gone" tabindex="0" role="button" aria-label="trapo viejo" data-id="trapo_viejo" transform="translate(180,440)">
+        <circle r="16" fill="transparent"/>
+        <path d="M-9,-6 L9,-6 L6,7 L-6,7 Z" fill="var(--muted)"/>
+      </g>
+    </svg>
+    <div class="tag" id="tag"></div>
+  </div>
+
+  <div class="panel">
+    <span class="who" id="panelWho">Sótano</span>
+    <span class="msg" id="panelMsg">Un sótano de piedra con olor a humedad y una bombilla solitaria colgando del techo. Al fondo, una puerta de roble con cerradura dorada.</span>
+  </div>
+
+  <div class="controls">
+    <div class="verbs">
+      <button class="verb active" data-verb="coger" id="verbCoger">Coger / Usar</button>
+      <button class="verb" data-verb="mirar" id="verbMirar">Mirar</button>
+    </div>
+    <div class="inventory">
+      <span class="label">Llaves</span>
+      <div class="slots" id="slots">
+        <div class="slot empty"></div>
+        <div class="slot empty"></div>
+        <div class="slot empty"></div>
+        <div class="slot empty"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">Prototipo de interfaz — misma lógica que <code>scenarios/02-medium-color-locks.json</code>, sin arte pintado a mano: formas planas + una sola fuente de luz.</div>
+</div>
+
+<script>
+(function () {
+  var descriptions = {
+    llave_plata: "Una llave pequeña y brillante, de plata pulida. Por su tamaño, parece encajar en una cerradura igualmente pequeña.",
+    cofre_plata: "Un cofre pequeño con tachuelas plateadas y una cerradura del mismo color. Encaja con una llave del mismo color.",
+    llave_roja: "Una llave mediana esmaltada de rojo intenso.",
+    cofre_rojo: "Un cofre mediano pintado de rojo, con una cerradura roja del mismo tono. Encaja con una llave del mismo color.",
+    llave_verde: "Una llave grande esmaltada de verde oscuro, gruesa.",
+    cofre_verde: "Un cofre grande pintado de verde, con una cerradura verde voluminosa. Encaja con una llave del mismo color.",
+    llave_oro: "Una llave dorada de aspecto institucional, gruesa y pesada. Encaja en cerraduras grandes.",
+    cofre_azul: "Un cofre pintado de azul desconchado. Sorprendentemente, no tiene cerradura: las bisagras se abren al primer empujón.",
+    trapo_viejo: "Un trapo gris y manchado de aceite. Inservible.",
+    puerta_principal: "Una puerta gruesa de roble con marco metálico y una cerradura dorada considerable."
+  };
+
+  var names = {
+    llave_plata: "llave plateada", cofre_plata: "cofre plateado",
+    llave_roja: "llave roja", cofre_rojo: "cofre rojo",
+    llave_verde: "llave verde", cofre_verde: "cofre verde",
+    llave_oro: "llave dorada", cofre_azul: "cofre azul",
+    trapo_viejo: "trapo viejo", puerta_principal: "puerta principal"
+  };
+
+  var chestOf = { llave_roja: "cofre_plata", llave_verde: "cofre_rojo", llave_oro: "cofre_verde", trapo_viejo: "cofre_azul" };
+  var requires = { cofre_plata: "llave_plata", cofre_rojo: "llave_roja", cofre_verde: "llave_verde", puerta_principal: "llave_oro" };
+  var contains = { cofre_plata: "llave_roja", cofre_rojo: "llave_verde", cofre_verde: "llave_oro", cofre_azul: "trapo_viejo" };
+
+  var inventory = [];
+  var opened = {};
+  var won = false;
+
+  var panelWho = document.getElementById("panelWho");
+  var panelMsg = document.getElementById("panelMsg");
+  var tag = document.getElementById("tag");
+  var stage = document.getElementById("stage");
+  var slots = document.querySelectorAll("#slots .slot");
+  var verbCoger = document.getElementById("verbCoger");
+  var verbMirar = document.getElementById("verbMirar");
+  var verb = "coger";
+
+  verbCoger.addEventListener("click", function () { setVerb("coger"); });
+  verbMirar.addEventListener("click", function () { setVerb("mirar"); });
+  function setVerb(v) {
+    verb = v;
+    verbCoger.classList.toggle("active", v === "coger");
+    verbMirar.classList.toggle("active", v === "mirar");
+  }
+
+  function say(who, text, cls) {
+    panelWho.textContent = who;
+    panelMsg.textContent = text;
+    panelMsg.className = "msg" + (cls ? " " + cls : "");
+  }
+
+  function keyColor(id) {
+    return { llave_plata: "var(--silver)", llave_roja: "var(--red)", llave_verde: "var(--green)", llave_oro: "var(--gold)" }[id];
+  }
+
+  function renderInventory() {
+    inventory.forEach(function (id, i) {
+      if (!slots[i]) return;
+      slots[i].classList.remove("empty");
+      slots[i].innerHTML = '<svg viewBox="-10 -10 20 20"><circle r="7" fill="none" stroke="' + keyColor(id) + '" stroke-width="3"/><rect x="4" y="-1.5" width="10" height="3" fill="' + keyColor(id) + '"/></svg>';
+    });
+  }
+
+  function take(id) {
+    if (inventory.indexOf(id) !== -1) return;
+    inventory.push(id);
+    renderInventory();
+    var el = document.getElementById("hot-" + id);
+    if (el) el.classList.add("gone");
+  }
+
+  function hasKey(id) { return inventory.indexOf(id) !== -1; }
+
+  function reveal(id) {
+    var el = document.getElementById("hot-" + id);
+    if (el) el.classList.remove("gone");
+  }
+
+  document.querySelectorAll(".hot").forEach(function (el) {
+    var id = el.getAttribute("data-id");
+    if (!id) return;
+
+    el.addEventListener("mouseenter", function (e) { showTag(el, names[id]); });
+    el.addEventListener("mousemove", function (e) { positionTag(e); });
+    el.addEventListener("mouseleave", function () { tag.classList.remove("show"); });
+    el.addEventListener("focus", function () {
+      var r = el.getBoundingClientRect();
+      var s = stage.getBoundingClientRect();
+      tag.textContent = names[id];
+      tag.style.left = (r.left - s.left + r.width / 2) + "px";
+      tag.style.top = (r.top - s.top) + "px";
+      tag.classList.add("show");
+    });
+    el.addEventListener("blur", function () { tag.classList.remove("show"); });
+
+    el.addEventListener("click", function () { interact(id); });
+    el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); interact(id); }
+    });
+  });
+
+  function showTag(el, text) {
+    tag.textContent = text;
+    tag.classList.add("show");
+  }
+  function positionTag(e) {
+    var s = stage.getBoundingClientRect();
+    tag.style.left = (e.clientX - s.left) + "px";
+    tag.style.top = (e.clientY - s.top) + "px";
+  }
+
+  function interact(id) {
+    if (won) return;
+
+    if (verb === "mirar") {
+      say(names[id], descriptions[id]);
+      return;
+    }
+
+    if (id === "llave_plata" || id === "llave_roja" || id === "llave_verde" || id === "llave_oro") {
+      take(id);
+      say(names[id], "Guardas la " + names[id] + ".", "ok");
+      return;
+    }
+
+    if (id === "trapo_viejo") {
+      say(names[id], descriptions[id]);
+      return;
+    }
+
+    if (id === "puerta_principal") {
+      if (hasKey("llave_oro")) {
+        won = true;
+        say("Puerta principal", "La llave dorada gira en la cerradura. La puerta se abre. Fin del escenario.", "ok");
+        document.getElementById("goalTag").textContent = "objetivo cumplido";
+      } else {
+        say("Puerta principal", descriptions.puerta_principal + " No cede: hace falta la llave dorada.", "warn");
+      }
+      return;
+    }
+
+    // chests
+    if (opened[id]) {
+      say(names[id], "El " + names[id] + " ya está abierto y vacío.");
+      return;
+    }
+    var req = requires[id];
+    if (req && !hasKey(req)) {
+      say(names[id], descriptions[id] + " Está cerrado con llave.", "warn");
+      return;
+    }
+    opened[id] = true;
+    var inside = contains[id];
+    if (inside) reveal(inside);
+    var el = document.getElementById("hot-" + id);
+    if (el) el.style.opacity = "0.65";
+    say(names[id], "Abres el " + names[id] + ". Dentro hay " + (inside === "trapo_viejo" ? "un trapo viejo, inservible." : "una " + names[inside] + "."), "ok");
+  }
+})();
+</script>

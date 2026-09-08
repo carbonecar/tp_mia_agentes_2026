@@ -104,6 +104,27 @@ def aggregate(cases: list[dict[str, Any]]) -> dict[str, Any]:
     return {"overall": overall, "by_scenario": scenario_summaries}
 
 
+def aggregate_explorer_cost(cases: list[dict[str, Any]]) -> dict[str, int] | None:
+    """Suma el costo del sub-agente explorador (`agent_mode="subagent"`, ver
+    `eval/runner.py`) a través de todos los casos.
+
+    Este costo vive fuera de `AgentResult.input_tokens`/`output_tokens` del
+    agente actor (`mia_agents.types.AgentResult` documenta explícitamente
+    que los sub-agentes invocados por herramientas no se contabilizan ahí),
+    así que sin esta función el costo real del modo `subagent` quedaría
+    subestimado en cualquier comparación contra el modo `flat`. Devuelve
+    `None` si ningún caso corrió en modo `subagent` (nada que sumar).
+    """
+    sinks = [c["explorer_cost"] for c in cases if c.get("explorer_cost") is not None]
+    if not sinks:
+        return None
+    return {
+        "total_calls": sum(s.get("calls", 0) for s in sinks),
+        "total_input_tokens": sum(s.get("input_tokens", 0) for s in sinks),
+        "total_output_tokens": sum(s.get("output_tokens", 0) for s in sinks),
+    }
+
+
 def to_markdown_table(summary: dict[str, Any]) -> str:
     """Tabla Markdown lista para pegar en `INFORME.md`."""
     lines = [
