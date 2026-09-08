@@ -34,6 +34,13 @@ class StructuredOutputError(RuntimeError):
 # pasado, y se sigue mirando la última ejecución real.
 _LOOP_BLOCKED_MARKER = "ya forma parte de un patrón que se repitió sin variar"
 
+# Cuántos fallos pendientes distintos como máximo se listan en el
+# recordatorio de `remind_pending_failures` — evita que el propio
+# recordatorio se vuelva ruido si el agente acumula muchos errores
+# distintos a lo largo de una conversación larga. Se muestran los más
+# recientes (orden de inserción del dict).
+_MAX_PENDING_FAILURE_REMINDERS = 5
+
 
 class _Plan(BaseModel):
     """Salida estructurada de la fase de planificación (`planner=True`).
@@ -92,6 +99,32 @@ class _Triage(BaseModel):
             "(`explorar_sala`, si está disponible) en vez de examinar todo "
             "directamente. False si el objetivo es acotado (una sola sala, "
             "pocos objetos) y delegar solo agregaría costo extra."
+        ),
+    )
+
+
+class _Reflection(BaseModel):
+    """Salida estructurada del chequeo de estancamiento (`reflect_on_stall=True`).
+
+    A diferencia de `_Plan`/`_Triage` (se disparan una única vez, antes del
+    bucle), esto se dispara *dentro* del bucle, cada vez que `_stall_streak`
+    alcanza `stall_window` (ver `_reflect` y la sección "Bucle principal" de
+    `run`). El propio LLM diagnostica por qué no hay progreso mirando solo
+    los resultados recientes — sin que el framework tenga que reconocer
+    ningún texto de error específico de `mia_world`.
+    """
+
+    diagnosis: str = Field(
+        description=(
+            "Una oración: por qué no se está progresando a partir de las "
+            "acciones y resultados recientes (qué se repite, o qué se "
+            "consiguió pero no se usó)."
+        ),
+    )
+    next_action_hint: str = Field(
+        description=(
+            "Una sugerencia concreta y accionable de próximo paso, distinta "
+            "de lo que se viene repitiendo."
         ),
     )
 
@@ -170,6 +203,9 @@ class MyAgent:
         retry_backoff_seconds: float = 0.05,
         planner: bool = False,
         adaptive: bool = False,
+        remind_pending_failures: bool = False,
+        reflect_on_stall: bool = False,
+        stall_window: int = 6,
         max_consecutive_repeats: int = 2,
         max_cycle_period: int = 8,
         max_blocked_repeats: int = 5,
@@ -218,6 +254,58 @@ class MyAgent:
             `planner` si ambos son `True` (capa adaptativa, no una
             combinación de las dos). Ver la sección de la capa adaptativa
             en `INFORME_M3.md`.
+        remind_pending_failures : bool
+            Si es `True`, cada vez que una tool falla (`AgentStep.error`
+            seteado, o un "error suave" — `tool_output` que empieza con
+            `"Error: "`, como devuelven varias tools de `mia_world`) el
+            error queda registrado por `(tool_name, arguments_json)`. En
+            cada turno siguiente, mientras ese fallo siga sin resolverse,
+            se le agrega al modelo un recordatorio transitorio (no se
+            persiste en `self._history`, solo se agrega a los `messages`
+            de esa llamada puntual) listando los fallos pendientes más
+            recientes (tope: 5). Se limpia solo en cuanto esa misma
+            `(tool_name, arguments_json)` se ejecuta con éxito.
+            Motivación: encontrado en la práctica (`INFORME_M3.md`) que un
+            agente puede reintentar la misma acción ya fallida varias veces
+            a lo largo de una conversación larga sin que estén *seguidas*
+            — la detección de ciclos (`_is_looping`) solo corta repeticiones
+            consecutivas, así que un fallo que vuelve cada tantos pasos
+            (en vez de en ráfaga) nunca llega a bloquearse, aunque
+            `eval/failure_modes.py` igual lo marque como
+            `accion_repetida_fallida`. Esto ataca esa causa distinta:
+            mantener el error visible en cada turno en vez de dejar que se
+            pierda en el historial hasta la próxima vez que se repite el
+            mismo error.
+        reflect_on_stall : bool
+            Si es `True`, el framework lleva la cuenta de pasos consecutivos
+            sin novedad — un paso "sin novedad" es uno cuyo
+            `(tool_name, tool_input, tool_output, error)` ya se vio antes en
+            esta corrida, sin importar si en el medio se ejecutaron otras
+            tools distintas. Al llegar a `stall_window` pasos sin novedad
+            seguidos, se dispara `_reflect`: una llamada aparte (vía
+            `structured_call`, aislada de `self._history`) donde el propio
+            modelo mira el resumen de resultados recientes y devuelve un
+            diagnóstico y una sugerencia concreta de próximo paso. Esa
+            sugerencia se agrega como recordatorio transitorio (no persiste
+            en `self._history`) al turno inmediatamente siguiente, una sola
+            vez, y el contador se reinicia.
+            Motivación (`INFORME_M3.md`, sección 4.13): `remind_pending_
+            failures` solo ayuda cuando el problema es "se olvidó de un
+            error puntual" — pero se encontraron casos donde el agente
+            **no dedujo la corrección** a partir de un error que tenía
+            justo delante (reintenta con ids inventados en vez de volver a
+            tomar el ítem correcto), y otros donde **no falló nada**:
+            consiguió lo que necesitaba y se distrajo antes de usarlo. Ninguno
+            de los dos se soluciona con más memoria de errores pasados —
+            acá en cambio se le pide al propio modelo que razone sobre el
+            estancamiento, en vez de intentar reconocer el patrón desde
+            afuera con reglas fijas. Es una hipótesis a probar, no algo ya
+            confirmado: es el mismo modelo que viene fallando en razonar el
+            que tiene que auto-diagnosticarse, así que no hay garantía de
+            que ayude más que `remind_pending_failures`.
+        stall_window : int
+            Cuántos pasos seguidos sin novedad (ver `reflect_on_stall`)
+            disparan una reflexión. Sin efecto si `reflect_on_stall=False`.
         max_consecutive_repeats : int
             Cuántas veces seguidas se permite repetir el mismo *ciclo* de
             tools (de cualquier período entre 1 y `max_cycle_period`) antes
@@ -261,6 +349,13 @@ class MyAgent:
         self._planner = planner
         self._adaptive = adaptive
         self._planned = False
+        self._remind_pending_failures = remind_pending_failures
+        self._pending_failures: dict[str, str] = {}
+        self._reflect_on_stall = reflect_on_stall
+        self._stall_window = stall_window
+        self._seen_step_signatures: set[tuple[str, str, str | None, str | None]] = set()
+        self._stall_streak = 0
+        self._active_reflection_hint: str | None = None
         self._max_consecutive_repeats = max_consecutive_repeats
         self._max_cycle_period = max_cycle_period
         self._max_blocked_repeats = max_blocked_repeats
@@ -581,6 +676,39 @@ class MyAgent:
             )
         return augmented
 
+    def _reflect(self, steps: list[AgentStep]) -> str | None:
+        """Diagnóstico genérico de estancamiento (`reflect_on_stall=True`).
+
+        Se dispara desde `run` cuando `_stall_streak` alcanza
+        `stall_window` pasos sin novedad seguidos. A diferencia de
+        `remind_pending_failures` (repite el error tal cual) o de
+        `_is_looping` (corta ejecuciones repetidas en ráfaga, sin razonar
+        sobre ellas), acá se le pide al propio modelo que mire el resumen
+        de resultados recientes y explique qué está fallando — cubre tanto
+        reintentos espaciados de la misma acción como "consiguió algo y
+        no lo usó", ninguno de los dos con un patrón de texto fijo que
+        reconocer desde afuera (`INFORME_M3.md`, sección 4.13).
+
+        Mismo contrato de degradación silenciosa que `_plan_subgoals`/
+        `_triage`: ante `StructuredOutputError` devuelve `None` (no hay
+        sugerencia esa vez) en vez de romper `run`.
+        """
+        recent = steps[-self._stall_window :]
+        recap = "\n".join(f"- {s.tool_name}({s.tool_input}) -> {s.error or s.tool_output}" for s in recent)
+        prompt = (
+            "Sos un evaluador externo, no un ejecutor: no realices ninguna acción vos "
+            f"mismo. Un agente lleva {len(recent)} pasos sin progreso real — mirá sus "
+            f"acciones y resultados más recientes:\n{recap}\n\n"
+            "Diagnosticá en una oración por qué no está progresando (qué se repite, o "
+            "qué consiguió pero no usó), y sugerí una próxima acción concreta y "
+            "distinta de lo que se viene repitiendo."
+        )
+        try:
+            reflection = self.structured_call(prompt, _Reflection)
+        except StructuredOutputError:
+            return None
+        return f"{reflection.diagnosis} Sugerencia: {reflection.next_action_hint}"
+
     # ------------------------------------------------------------------
     # Bucle principal
     # ------------------------------------------------------------------
@@ -624,6 +752,44 @@ class MyAgent:
 
         for _ in range(self._max_iterations):
             messages = self._windowed_messages()
+            if self._remind_pending_failures and self._pending_failures:
+                # Transitorio: se agrega solo a la lista local que ve esta
+                # llamada, nunca a `self._history` — así no se persiste ni
+                # se cuenta contra `max_history_messages`, pero reaparece en
+                # cada turno mientras el fallo siga sin resolverse (ver
+                # docstring de `remind_pending_failures`).
+                recent = list(self._pending_failures.items())[-_MAX_PENDING_FAILURE_REMINDERS:]
+                reminder_lines = "\n".join(f"- {key}: {failure}" for key, failure in recent)
+                messages = [
+                    *messages,
+                    {
+                        "role": "user",
+                        "content": (
+                            "Recordatorio — estos intentos fallaron antes y siguen sin "
+                            "resolverse (puede que ya no aparezcan en tu historial "
+                            "reciente, pero la causa del error sigue sin cambiar):\n"
+                            f"{reminder_lines}\n"
+                            "No los repitas tal cual: resolvé la causa antes de "
+                            "reintentarlos."
+                        ),
+                    },
+                ]
+            if self._reflect_on_stall and self._active_reflection_hint:
+                # Transitorio y de un solo uso: se agrega al próximo turno y
+                # se limpia acá mismo, se haya usado o no — si el
+                # estancamiento sigue, `_stall_streak` vuelve a acumularse y
+                # dispara una reflexión nueva más adelante (ver `_reflect`).
+                messages = [
+                    *messages,
+                    {
+                        "role": "user",
+                        "content": (
+                            "Reflexión automática — no se detectó progreso real en los "
+                            f"últimos {self._stall_window} pasos:\n{self._active_reflection_hint}"
+                        ),
+                    },
+                ]
+                self._active_reflection_hint = None
             try:
                 response = self._chat_with_retry(messages=messages, tools=tools, system=self._system)
             except Exception as exc:
@@ -674,6 +840,17 @@ class MyAgent:
                 else:
                     consecutive_blocks = 0
                     tool_output, error = self._execute_tool(tool_call.name, tool_call.arguments)
+                    if self._remind_pending_failures:
+                        failure_key = f"{tool_call.name}:{tool_call.arguments}"
+                        # Mismo criterio que `eval/failure_modes.py::_step_failed`:
+                        # varias tools de `mia_world` señalan un fallo devolviendo
+                        # un string `"Error: ..."` como `tool_output` normal en vez
+                        # de lanzar, así que un fallo "suave" también cuenta.
+                        is_failure = error is not None or (tool_output is not None and tool_output.startswith("Error:"))
+                        if is_failure:
+                            self._pending_failures[failure_key] = error if error is not None else tool_output
+                        else:
+                            self._pending_failures.pop(failure_key, None)
                 steps.append(
                     AgentStep(
                         tool_name=tool_call.name,
@@ -689,6 +866,17 @@ class MyAgent:
                         "content": tool_output if error is None else error,
                     }
                 )
+
+                if self._reflect_on_stall:
+                    signature = (tool_call.name, tool_call.arguments, tool_output, error)
+                    if signature in self._seen_step_signatures:
+                        self._stall_streak += 1
+                    else:
+                        self._seen_step_signatures.add(signature)
+                        self._stall_streak = 0
+                    if self._stall_streak >= self._stall_window:
+                        self._active_reflection_hint = self._reflect(steps)
+                        self._stall_streak = 0
 
                 if looping and consecutive_blocks > self._max_blocked_repeats:
                     # Bloquear el intento no obligó al modelo a cambiar de estrategia:

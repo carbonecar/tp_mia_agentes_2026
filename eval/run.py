@@ -84,6 +84,9 @@ class EvalArgs:
     system_prompt_file: str | None
     planner: bool
     adaptive: bool
+    remind_failures: bool
+    reflect_on_stall: bool
+    stall_window: int | None
     agent_mode: str
     room_graph: bool
     case_timeout_seconds: float | None
@@ -158,6 +161,39 @@ class EvalArgs:
             ),
         )
         parser.add_argument(
+            "--remind-failures",
+            action="store_true",
+            help=(
+                "activa `MyAgent(remind_pending_failures=True)`: cada vez que una "
+                "tool falla, el error queda pendiente y se le recuerda al modelo en "
+                "cada turno siguiente (fuera del historial persistido) hasta que esa "
+                "misma acción se ejecute con éxito. Ataca los fallos repetidos "
+                "*no consecutivos* (que la detección de ciclos no corta, porque solo "
+                "bloquea repeticiones seguidas) — ver `INFORME_M3.md`."
+            ),
+        )
+        parser.add_argument(
+            "--reflect-on-stall",
+            action="store_true",
+            help=(
+                "activa `MyAgent(reflect_on_stall=True)`: cuando pasan "
+                "`--stall-window` pasos seguidos sin ningún resultado nuevo "
+                "(mismo criterio genérico, no reconoce texto de error de "
+                "`mia_world`), se dispara una llamada aparte donde el propio "
+                "modelo diagnostica el estancamiento y sugiere un próximo paso "
+                "concreto, inyectado como recordatorio transitorio. Ataca casos "
+                "que `--remind-failures` no cubre: el modelo no dedujo la "
+                "corrección de un error, o se distrajo después de un éxito sin "
+                "fallar nada — ver `INFORME_M3.md`."
+            ),
+        )
+        parser.add_argument(
+            "--stall-window",
+            type=int,
+            default=None,
+            help="pasos sin novedad seguidos que disparan una reflexión (default del framework: 6). Sin efecto sin --reflect-on-stall.",
+        )
+        parser.add_argument(
             "--case-timeout-seconds",
             type=float,
             default=None,
@@ -193,6 +229,12 @@ def _build_config(args: EvalArgs) -> dict[str, Any]:
         config["planner"] = True
     if args.adaptive:
         config["adaptive"] = True
+    if args.remind_failures:
+        config["remind_pending_failures"] = True
+    if args.reflect_on_stall:
+        config["reflect_on_stall"] = True
+    if args.stall_window is not None:
+        config["stall_window"] = args.stall_window
     return config
 
 def _build_judge_agent(args: EvalArgs) -> Any:

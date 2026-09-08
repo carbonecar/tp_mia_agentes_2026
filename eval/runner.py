@@ -23,7 +23,7 @@ from mia_world.state import Scenario, World
 from mia_world.tools import make_world_tools
 
 from student_framework.tools.explorer_subagent import make_explorer_tool
-from student_framework.tools.room_graph import make_room_graph_tool
+from student_framework.tools.room_graph import make_room_graph_tool, wrap_go_with_map
 
 AGENT_MODES = ("flat", "subagent", "adaptive")
 
@@ -164,24 +164,35 @@ def _register_world_tools(
     `include_room_graph` (independiente de `agent_mode`, ver
     `student_framework.tools.room_graph`): si es `True` y el mundo tiene
     navegación (alguna sala con `exits`, mismo chequeo que usa
-    `make_world_tools` para decidir si registra `go`), agrega también
-    `consultar_mapa` — una tool determinística, sin LLM, que arma el mapa
-    de salas ya visitadas directo desde `world`. Se agrega igual sea cual
-    sea `agent_mode`, para poder comparar "con mapa" vs. "sin mapa" en
-    cualquiera de las tres arquitecturas.
+    `make_world_tools` para decidir si registra `go`), hace dos cosas:
+    (1) agrega `consultar_mapa` — una tool determinística, sin LLM, que
+    arma el mapa de salas ya visitadas directo desde `world` — y (2)
+    **envuelve `go`** (`wrap_go_with_map`) para que cada movimiento venga
+    acompañado del mapa automáticamente, sin depender de que el modelo
+    elija llamar `consultar_mapa` por su cuenta — encontrado en la
+    práctica (`INFORME_M3.md`, secciones 4.8-4.10) que, aun mencionada
+    explícitamente en el prompt, la tool casi no se usaba (2-3 de 24
+    casos). Se aplica igual sea cual sea `agent_mode`, para poder comparar
+    "con mapa" vs. "sin mapa" en cualquiera de las tres arquitecturas.
 
     Devuelve el `cost_sink` del explorador (o `None` en modo `"flat"` sin
     explorador) para que `run_case` pueda reportar el costo oculto de las
     llamadas del sub-agente, que `AgentResult` del actor no contabiliza
     (ver docstring de `mia_agents.types.AgentResult` y de
-    `make_explorer_tool`). `consultar_mapa` no tiene costo oculto que
-    reportar (no usa LLM), así que no participa de ese `cost_sink`.
+    `make_explorer_tool`). `consultar_mapa`/el `go` envuelto no tienen
+    costo oculto que reportar (no usan LLM), así que no participan de ese
+    `cost_sink`.
     """
     if agent_mode not in AGENT_MODES:
         raise ValueError(f"agent_mode debe ser uno de {AGENT_MODES}, no {agent_mode!r}.")
 
     world_tools = {schema.name: (fn, schema) for fn, schema in make_world_tools(world)}
     cost_sink: dict[str, Any] | None
+
+    has_navigation = any(room.exits for room in world.rooms.values())
+    if include_room_graph and has_navigation and "go" in world_tools:
+        go_fn, go_schema = world_tools["go"]
+        world_tools["go"] = (wrap_go_with_map(go_fn, world), go_schema)
 
     if agent_mode == "flat":
         for fn, schema in world_tools.values():
@@ -217,7 +228,7 @@ def _register_world_tools(
                 fn, schema = world_tools[name]
                 agent.register_tool(fn, schema)
 
-    if include_room_graph and any(room.exits for room in world.rooms.values()):
+    if include_room_graph and has_navigation:
         map_fn, map_schema = make_room_graph_tool(world)
         agent.register_tool(map_fn, map_schema)
 

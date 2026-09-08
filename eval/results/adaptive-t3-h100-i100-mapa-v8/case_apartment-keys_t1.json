@@ -1,0 +1,116 @@
+{
+  "scenario": "apartment-keys",
+  "difficulty": "medium",
+  "trial": 1,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": true,
+  "goal_reason": "puerta principal está abierta",
+  "goal_achieved_at_step": 13,
+  "wall_clock_seconds": 27.556012250017375,
+  "agent_result": {
+    "answer": "<thinking>La puerta principal se abrió con éxito usando la llave dorada. He cumplido el objetivo de abrir la puerta principal.</thinking>\n\n<answer>La puerta principal se abrió con éxito usando la llave dorada.</answer>",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "(el explorador no devolvió ningún resumen; puede haber agotado sus pasos. Esto sí es seguro:)\nInventario: vacío\nCerraduras: puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "<thinking>No hay más objetos ni contenedores visibles en la sala. El inventario está vacío. Ahora, compilaré el resumen según las instrucciones.</thinking>\n\nSala: Recibidor\nSalidas: norte -> (desconocida) (abierta)\nObjetos visibles: puerta_principal (cerrada)\nContenedores revelados: ninguno\nCerraduras: puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"norte\"}",
+        "tool_output": "Mapa conocido (1 sala(s) visitada(s)):\nCamino recorrido: Recibidor\n\n- Recibidor (sala actual)\n  - norte: destino sin confirmar\n(mapa de arriba: tu estado justo antes de este movimiento)\n\nCaminas hacia norte. Llegas a Pasillo.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "<thinking>No hay cambios en la descripción de la sala y no se mencionan objetos específicos en el inventario. Parece que no hay más información disponible en esta sala.</thinking>\n\nSala: Pasillo\nSalidas: este -> cocina (abierta); sur -> recibidor (abierta)\nObjetos visibles: ninguno\nContenedores revelados: ninguno\nCerraduras: puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"este\"}",
+        "tool_output": "Mapa conocido (2 sala(s) visitada(s)):\nCamino recorrido: Recibidor -> Pasillo\n\n- Recibidor\n  - norte -> Pasillo (visitada)\n- Pasillo (sala actual)\n  - este: destino sin confirmar\n  - sur: destino sin confirmar\n(mapa de arriba: tu estado justo antes de este movimiento)\n\nCaminas hacia este. Llegas a Cocina.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "<thinking>El cajón contiene una llave dorada. No hay más objetos ni contenedores para examinar en esta sala.</thinking>\n\nSala: Cocina\nSalidas: oeste -> (desconocida)\nObjetos visibles: cajón de la cocina (abierto)\nContenedores revelados: cajón de la cocina: llave_oro\nCerraduras: puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_oro\"}",
+        "tool_output": "Tomas llave dorada.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Error: no ves ningún 'puerta_principal' aquí.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"oeste\"}",
+        "tool_output": "Mapa conocido (3 sala(s) visitada(s)):\nCamino recorrido: Recibidor -> Pasillo -> Cocina\n\n- Recibidor\n  - norte -> Pasillo (visitada)\n- Pasillo\n  - este -> Cocina (visitada)\n  - sur: destino sin confirmar\n- Cocina (sala actual)\n  - oeste: destino sin confirmar\n(mapa de arriba: tu estado justo antes de este movimiento)\n\nCaminas hacia oeste. Llegas a Pasillo.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"oeste\"}",
+        "tool_output": "Mapa conocido (3 sala(s) visitada(s)):\nCamino recorrido: Recibidor -> Pasillo -> Cocina -> Pasillo\n\n- Recibidor\n  - norte -> Pasillo (visitada)\n- Pasillo (sala actual)\n  - este -> Cocina (visitada)\n  - sur: destino sin confirmar\n- Cocina\n  - oeste -> Pasillo (visitada)\n(mapa de arriba: tu estado justo antes de este movimiento)\n\nError: no hay salida 'oeste' desde aquí. Salidas disponibles: este, sur.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"oeste\"}",
+        "tool_output": "Mapa conocido (3 sala(s) visitada(s)):\nCamino recorrido: Recibidor -> Pasillo -> Cocina -> Pasillo\n\n- Recibidor\n  - norte -> Pasillo (visitada)\n- Pasillo (sala actual)\n  - este -> Cocina (visitada)\n  - sur: destino sin confirmar\n- Cocina\n  - oeste -> Pasillo (visitada)\n(mapa de arriba: tu estado justo antes de este movimiento)\n\nError: no hay salida 'oeste' desde aquí. Salidas disponibles: este, sur.",
+        "error": null
+      },
+      {
+        "tool_name": "go",
+        "tool_input": "{\"direction\": \"sur\"}",
+        "tool_output": "Mapa conocido (3 sala(s) visitada(s)):\nCamino recorrido: Recibidor -> Pasillo -> Cocina -> Pasillo\n\n- Recibidor\n  - norte -> Pasillo (visitada)\n- Pasillo (sala actual)\n  - este -> Cocina (visitada)\n  - sur: destino sin confirmar\n- Cocina\n  - oeste -> Pasillo (visitada)\n(mapa de arriba: tu estado justo antes de este movimiento)\n\nCaminas hacia sur. Llegas a Recibidor.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Usas llave dorada con puerta principal. Se abre.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 54566,
+    "output_tokens": 680
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:recibidor",
+    "enter:pasillo",
+    "enter:cocina",
+    "take:llave_oro",
+    "enter:pasillo",
+    "enter:recibidor",
+    "open:puerta_principal"
+  ],
+  "agent_mode": "adaptive",
+  "include_room_graph": true,
+  "explorer_cost": {
+    "calls": 4,
+    "input_tokens": 16990,
+    "output_tokens": 863
+  }
+}

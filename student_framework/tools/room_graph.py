@@ -76,6 +76,19 @@ def _confirmed_edges(world: World, path: list[str]) -> dict[tuple[str, str], str
     return edges
 
 
+# Cuántas salas recientes se muestran en el "camino recorrido". Acotado a
+# propósito: sin límite, el breadcrumb crece una entrada por cada `go`,
+# así que dos movimientos idénticos en la práctica ya no producían el
+# mismo texto — eso dejaba ciega a `_is_looping` (compara `tool_output`
+# exacto) frente a una oscilación real (ver `INFORME_M3.md`, sección
+# 4.11: 88 `go` alternando dos salas, 0 bloqueados). Con la ventana
+# acotada, una vez que un patrón corto se estabiliza, la ventana vuelve a
+# repetirse byte a byte entre llamadas equivalentes — el resto del mapa
+# (salas visitadas, salidas, edges confirmados) ya era estable de por sí,
+# no crecía con la repetición.
+_BREADCRUMB_WINDOW = 12
+
+
 def _build_map_text(world: World) -> str:
     path = _visited_path(world)
 
@@ -86,7 +99,10 @@ def _build_map_text(world: World) -> str:
 
     edges = _confirmed_edges(world, path)
 
-    breadcrumb = " -> ".join(world.rooms[r].name for r in path if r in world.rooms)
+    breadcrumb_path = path[-_BREADCRUMB_WINDOW:]
+    breadcrumb = " -> ".join(world.rooms[r].name for r in breadcrumb_path if r in world.rooms)
+    if len(path) > _BREADCRUMB_WINDOW:
+        breadcrumb = f"(...) -> {breadcrumb}"
     lines = [
         f"Mapa conocido ({len(visited_order)} sala(s) visitada(s)):",
         f"Camino recorrido: {breadcrumb}",
@@ -126,3 +142,41 @@ def make_room_graph_tool(world: World) -> tuple[Callable[[], str], ToolSchema]:
         return _build_map_text(world)
 
     return consultar_mapa_impl, consultar_mapa_schema
+
+
+def wrap_go_with_map(go_fn: Callable[..., str], world: World) -> Callable[..., str]:
+    """Envuelve la tool `go` real para anteponerle el mapa conocido a cada
+    resultado, en vez de depender de que el modelo elija llamar
+    `consultar_mapa` por su cuenta.
+
+    Motivación (`INFORME_M3.md`, secciones 4.8-4.10): con `consultar_mapa`
+    como tool aparte, el modelo casi no la llamó incluso con el prompt
+    pidiéndoselo explícitamente (2-3 de 24 casos en las corridas
+    probadas). Esto la vuelve incondicional en vez de opt-in: cada vez que
+    el agente llama `go`, recibe el mapa (tal como estaba *antes* de ese
+    movimiento, para poder cotejarlo contra lo que esperaba) seguido del
+    resultado real de la navegación — sin que el modelo tenga que acordarse
+    de pedirlo.
+
+    No reemplaza a `consultar_mapa` como tool independiente (sigue
+    registrada aparte): esto solo *garantiza* una exposición mínima en
+    cada `go`; el modelo todavía puede consultar el mapa en cualquier otro
+    momento (p. ej. antes de decidir qué dirección tomar) si lo elige.
+
+    Nota sobre detección de ciclos (`student_framework/agent.py::_is_looping`):
+    como `go` solo agrega una entrada a `event_log` cuando el movimiento
+    es exitoso, un intento repetido contra una salida bloqueada (mismo
+    error, sin cambio de estado) sigue devolviendo el mismo mapa —
+    `(tool_output, error)` no cambia entre repeticiones, así que la
+    detección de ciclos sigue funcionando igual que sin este wrapper. Un
+    backtracking legítimo (movimientos exitosos a destinos distintos) sí
+    hace crecer el "camino recorrido" del mapa en cada llamada, lo que
+    solo refuerza que cada resultado sea distinto — nunca al revés.
+    """
+
+    def go_with_map_impl(direction: str) -> str:
+        map_before = _build_map_text(world)
+        result = go_fn(direction)
+        return f"{map_before}\n(mapa de arriba: tu estado justo antes de este movimiento)\n\n{result}"
+
+    return go_with_map_impl
