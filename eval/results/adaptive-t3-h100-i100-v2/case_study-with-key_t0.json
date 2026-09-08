@@ -1,0 +1,63 @@
+{
+  "scenario": "study-with-key",
+  "difficulty": "easy",
+  "trial": 0,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": true,
+  "goal_reason": "puerta principal está abierta",
+  "goal_achieved_at_step": 5,
+  "wall_clock_seconds": 6.426223999937065,
+  "agent_result": {
+    "answer": "<thinking>The golden key successfully opened the main door. I have now completed the objective of escaping the room.</thinking> ",
+    "steps": [
+      {
+        "tool_name": "look",
+        "tool_input": "{}",
+        "tool_output": "Estás en Estudio.\nUn estudio pequeño forrado de libros. Una alfombra persa cubre el centro del suelo. A un lado hay un escritorio de roble. Al fondo, la puerta principal.\nVes:\n  - alfombra [id: alfombra]\n  - escritorio [id: escritorio]\n  - puerta principal [id: puerta_principal] (cerrada)",
+        "error": null
+      },
+      {
+        "tool_name": "examine",
+        "tool_input": "{\"target\": \"alfombra\"}",
+        "tool_output": "alfombra: Una vieja alfombra persa. Algo abulta debajo.\nContiene:\n  - llave dorada [id: llave_oro]",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_oro\"}",
+        "tool_output": "Tomas llave dorada.",
+        "error": null
+      },
+      {
+        "tool_name": "examine",
+        "tool_input": "{\"target\": \"escritorio\"}",
+        "tool_output": "escritorio: Un escritorio de roble con dos cajones. Ambos están abiertos y vacíos.\nEstá vacío.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Usas llave dorada con puerta principal. Se abre.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 16635,
+    "output_tokens": 345
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:estudio",
+    "take:llave_oro",
+    "open:puerta_principal"
+  ],
+  "agent_mode": "adaptive",
+  "explorer_cost": {
+    "calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

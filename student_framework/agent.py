@@ -54,6 +54,58 @@ class _Plan(BaseModel):
     )
 
 
+class _Triage(BaseModel):
+    """Salida estructurada de la capa adaptativa (`adaptive=True`).
+
+    A diferencia de `planner`/`agent_mode="subagent"` (decisiones fijas,
+    tomadas desde afuera antes de correr el agente), acá el propio modelo
+    evalúa la complejidad aparente del objetivo — a partir únicamente del
+    mensaje inicial, que en este dataset ya describe la sala y el objetivo
+    de partida — y decide, caso por caso, si conviene planificar y/o
+    delegar la exploración. Ver `_triage` y la sección de la capa adaptativa
+    en `INFORME_M3.md`.
+    """
+
+    plan_needed: bool = Field(
+        description=(
+            "True si el objetivo tiene una dependencia de orden/secuencia no "
+            "trivial (varias sub-metas encadenadas, navegación multi-sala, "
+            "condiciones que deben cumplirse en un orden específico) que se "
+            "beneficiaría de un plan explícito antes de actuar. False si el "
+            "objetivo es simple y directo (una sola sala, pocos pasos "
+            "evidentes) y planificar de antemano no aportaría nada."
+        ),
+    )
+    subgoals: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Si `plan_needed` es True: lista ordenada de 3 a 8 sub-metas "
+            "concretas y verificables, en el orden en que conviene "
+            "perseguirlas. Si `plan_needed` es False: lista vacía."
+        ),
+    )
+    delegate_exploration_needed: bool = Field(
+        description=(
+            "True si el objetivo parece involucrar suficientes salas u "
+            "objetos como para que valga la pena delegar la exploración "
+            "detallada de cada sala a una herramienta separada "
+            "(`explorar_sala`, si está disponible) en vez de examinar todo "
+            "directamente. False si el objetivo es acotado (una sola sala, "
+            "pocos objetos) y delegar solo agregaría costo extra."
+        ),
+    )
+
+
+# Nombres de tools de este mundo específico (`mia_world`/
+# `explorer_subagent.py`) que la capa adaptativa puede podar tras el triage
+# (`_triage`, sección "Modo adaptativo" de `run`): la ruta "directa" de
+# exploración y la ruta "delegada". No es un acoplamiento nuevo — `_Triage`
+# ya nombra `explorar_sala` explícitamente en su descripción; esto solo
+# hace explícito también el otro lado de la disyuntiva.
+_DIRECT_EXPLORATION_TOOLS = ("look", "examine")
+_DELEGATED_EXPLORATION_TOOL = "explorar_sala"
+
+
 # ---------------------------------------------------------------------------
 # Resiliencia: clasificación de errores transitorios (LLM y tools)
 # ---------------------------------------------------------------------------
@@ -117,6 +169,7 @@ class MyAgent:
         max_tool_retries: int = 2,
         retry_backoff_seconds: float = 0.05,
         planner: bool = False,
+        adaptive: bool = False,
         max_consecutive_repeats: int = 2,
         max_cycle_period: int = 8,
         max_blocked_repeats: int = 5,
@@ -148,6 +201,23 @@ class MyAgent:
             al bucle ReAct habitual: el mensaje de usuario efectivo queda
             aumentado con una lista de sub-metas ordenadas. Experimento M3
             "planner explícito vs. ReAct puro" (ver `INFORME_M3.md`).
+        adaptive : bool
+            Si es `True`, la primera llamada a `run` dispara una fase de
+            *triage* (ver `_triage`) en vez de planificar siempre o nunca:
+            el propio modelo evalúa la complejidad aparente del objetivo y
+            decide, caso por caso, si conviene anteponer un plan de
+            sub-metas y/o delegar la exploración a `explorar_sala`. Si
+            ambas rutas de exploración están registradas (`look`/`examine`
+            directas y `explorar_sala` delegada), el triage **poda** la que
+            no eligió en vez de solo recomendarla como texto — encontrado
+            en la práctica que dejar las dos siempre disponibles le daba al
+            modelo una salida constante para "explorar una vez más" en vez
+            de actuar (`INFORME_M3.md`, sección 4.6). Reemplaza la decisión
+            externa y fija de `planner`/`agent_mode="subagent"` por una que
+            el propio agente hace por escenario. Tiene precedencia sobre
+            `planner` si ambos son `True` (capa adaptativa, no una
+            combinación de las dos). Ver la sección de la capa adaptativa
+            en `INFORME_M3.md`.
         max_consecutive_repeats : int
             Cuántas veces seguidas se permite repetir el mismo *ciclo* de
             tools (de cualquier período entre 1 y `max_cycle_period`) antes
@@ -189,6 +259,7 @@ class MyAgent:
         self._max_tool_retries = max_tool_retries
         self._retry_backoff_seconds = retry_backoff_seconds
         self._planner = planner
+        self._adaptive = adaptive
         self._planned = False
         self._max_consecutive_repeats = max_consecutive_repeats
         self._max_cycle_period = max_cycle_period
@@ -420,6 +491,96 @@ class MyAgent:
             f"{plan_text}"
         )
 
+    def _triage(self, user_message: str) -> str:
+        """Evalúa la complejidad aparente del objetivo y decide, en una sola
+        llamada estructurada, si conviene anteponer un plan de sub-metas y/o
+        recomendar delegar la exploración a `explorar_sala` — capa
+        adaptativa (`adaptive=True`).
+
+        A diferencia de `_plan_subgoals` (que siempre planifica cuando
+        `planner=True`), acá la decisión de *si* planificar también sale del
+        modelo, no de un flag externo fijo. Mismo mecanismo de
+        `structured_call` aislado del historial; mismo contrato de
+        degradación silenciosa ante `StructuredOutputError`: nunca rompe
+        `run`, corre ReAct puro sobre el mensaje original si el triage
+        falla.
+
+        La decisión de exploración **poda** una de las dos rutas en vez de
+        solo recomendarla como texto — encontrado en la práctica
+        (`INFORME_M3.md`, sección 4.6): cuando `agent_mode="adaptive"`
+        registra ambas rutas a la vez (`look`/`examine` directas y
+        `explorar_sala` delegada), dejarlas *siempre* disponibles le daba
+        al modelo una salida constante para "explorar una vez más" en vez
+        de comprometerse a actuar — un trial de `backtracking-vault` gastó
+        los 100 pasos completos alternando entre las dos sin un solo
+        `take`/`use`/`go`. Si ambas rutas están registradas, el triage
+        elimina de `self._tools`/`self._schemas` la que no recomendó, así
+        que a partir de ahí el modelo ya no tiene la opción de alternar. Si
+        solo una ruta está registrada (p. ej. `agent_mode="subagent"` o
+        `"flat"` puros), no hay nada que podar — la recomendación queda
+        solo como texto, o se omite si la ruta recomendada ni siquiera
+        existe.
+        """
+        triage_prompt = (
+            "Sos un evaluador de complejidad, no un ejecutor: no realices ninguna "
+            "acción vos mismo. A partir del siguiente objetivo, decidí (a) si "
+            "conviene anteponer un plan explícito de sub-metas antes de actuar, y "
+            "(b) si conviene delegar la exploración detallada de cada sala a una "
+            "herramienta separada en vez de examinar todo directamente. Basate "
+            "solo en la complejidad aparente del objetivo (cuántas salas u "
+            "objetos menciona, si hay dependencias de orden), no en cómo "
+            f"resolverlo.\n\nObjetivo: {user_message}"
+        )
+        try:
+            triage = self.structured_call(triage_prompt, _Triage)
+        except StructuredOutputError:
+            return user_message
+
+        augmented = user_message
+        if triage.plan_needed and triage.subgoals:
+            plan_text = "\n".join(f"{i}. {sg}" for i, sg in enumerate(triage.subgoals, start=1))
+            augmented += (
+                "\n\nPlan de sub-metas sugerido (perseguilas en este orden salvo "
+                "que lo que vayas descubriendo indique lo contrario):\n"
+                f"{plan_text}"
+            )
+
+        has_direct = any(name in self._tools for name in _DIRECT_EXPLORATION_TOOLS)
+        has_delegated = _DELEGATED_EXPLORATION_TOOL in self._tools
+
+        if has_direct and has_delegated:
+            # Ambas rutas registradas (agent_mode="adaptive"): podar la que
+            # el triage no recomendó, no solo sugerirla.
+            if triage.delegate_exploration_needed:
+                for name in _DIRECT_EXPLORATION_TOOLS:
+                    self._tools.pop(name, None)
+                    self._schemas.pop(name, None)
+                augmented += (
+                    "\n\nEste escenario parece tener suficientes salas u objetos "
+                    "como para que convenga delegar la exploración: a partir de "
+                    "ahora solo tenés disponible `explorar_sala` para investigar "
+                    "cada sala, `look`/`examine` ya no están disponibles."
+                )
+            else:
+                self._tools.pop(_DELEGATED_EXPLORATION_TOOL, None)
+                self._schemas.pop(_DELEGATED_EXPLORATION_TOOL, None)
+                augmented += (
+                    "\n\nEste escenario parece acotado: a partir de ahora "
+                    "explorá cada sala directamente con `look`/`examine`, "
+                    "`explorar_sala` ya no está disponible."
+                )
+        elif triage.delegate_exploration_needed and has_delegated:
+            # Solo la ruta delegada está registrada (p. ej.
+            # agent_mode="subagent"): no hay nada que podar, pero reforzar
+            # la recomendación como texto sigue siendo útil.
+            augmented += (
+                "\n\nEste escenario parece tener suficientes salas u objetos "
+                "como para que convenga delegar la exploración detallada de "
+                "cada sala a la herramienta `explorar_sala` en vez de examinar "
+                "todo vos mismo."
+            )
+        return augmented
+
     # ------------------------------------------------------------------
     # Bucle principal
     # ------------------------------------------------------------------
@@ -438,10 +599,19 @@ class MyAgent:
         el mensaje de usuario efectivo se aumenta con un plan de sub-metas
         (ver `_plan_subgoals`). Solo ocurre una vez por instancia: llamadas
         sucesivas a `run` sobre la misma conversación no vuelven a planificar.
+
+        M3 (`adaptive=True`, tiene precedencia sobre `planner`): en vez de
+        planificar siempre, la primera llamada dispara una fase de *triage*
+        (ver `_triage`) donde el propio modelo decide, según la complejidad
+        aparente del objetivo, si conviene planificar y/o delegar la
+        exploración. También ocurre una única vez por instancia.
         """
-        if self._planner and not self._planned:
+        if not self._planned:
             self._planned = True
-            user_message = self._plan_subgoals(user_message)
+            if self._adaptive:
+                user_message = self._triage(user_message)
+            elif self._planner:
+                user_message = self._plan_subgoals(user_message)
 
         self._history.append({"role": "user", "content": user_message})
         self._last_user_index = len(self._history) - 1

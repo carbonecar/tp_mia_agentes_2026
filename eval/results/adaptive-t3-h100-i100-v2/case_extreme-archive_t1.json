@@ -1,0 +1,37 @@
+{
+  "scenario": "extreme-archive",
+  "difficulty": "extreme",
+  "trial": 1,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": false,
+  "goal_reason": "puerta principal está cerrada",
+  "goal_achieved_at_step": null,
+  "wall_clock_seconds": 32.600648042047396,
+  "agent_result": {
+    "answer": "",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": null}",
+        "tool_output": "Sala: Archivo central\nSalidas: ninguna\nObjetos visibles: estanteria_archivo (abierto); puerta_principal (cerrada)\nContenedores revelados: estanteria_archivo: expediente_1042; expediente_1387; expediente_1850; expediente_2104; expediente_2519; expediente_2841; expediente_3206; expediente_3478; expediente_3902; expediente_4117; expediente_4583; expediente_4860; expediente_5135; expediente_5404; expediente_5829; expediente_6201; expediente_6534; expediente_6987; expediente_7240; expediente_7615\nCerraduras: puerta principal [id: puerta_principal] requiere llave del archivo [id: llave_archivo]\nInventario: vacío",
+        "error": null
+      }
+    ],
+    "error": "An error occurred (ModelErrorException) when calling the Converse operation: Model produced invalid sequence as part of ToolUse. Please refer to the model tool use troubleshooting guide.",
+    "input_tokens": 2679,
+    "output_tokens": 73
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:archivo"
+  ],
+  "agent_mode": "adaptive",
+  "explorer_cost": {
+    "calls": 1,
+    "input_tokens": 11992,
+    "output_tokens": 520
+  }
+}

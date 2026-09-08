@@ -1,0 +1,64 @@
+{
+  "scenario": "extreme-archive",
+  "difficulty": "extreme",
+  "trial": 1,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": true,
+  "goal_reason": "puerta principal está abierta",
+  "goal_achieved_at_step": 4,
+  "wall_clock_seconds": 22.10961399995722,
+  "agent_result": {
+    "answer": "<thinking>All objects and containers in the room have been examined, and there are no additional locks or inventory. The main door is now open, and I can exit the room.</thinking>",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "Sala: Archivo central\nSalidas: norte -> ninguna; sur -> puerta principal (cerrada por Llave Maestra)\nObjetos visibles: estanteria_archivo (abierto); puerta_principal (cerrada); llave_archivo (cerrado)\nContenedores revelados: estanteria_archivo: expediente_1042; expediente_1387; expediente_1850; expediente_2104; expediente_2519; expediente_2841; expediente_3206; expediente_3478; expediente_3902; expediente_4117; expediente_4583; expediente_4860; expediente_5135; expediente_5404; expediente_5829; expediente_6201; expediente_6534; expediente_6987; expediente_7240; expediente_7615\nCerraduras: puerta principal [id: puerta_principal] requiere llave del archivo [id: llave_archivo]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": \"llave_archivo\"}",
+        "tool_output": "Sala: Archivo central\nSalidas: ninguna\nObjetos visibles: estanteria_archivo (cerrado); puerta_principal (cerrada); expediente_1042 (cerrado); expediente_1387 (cerrado); expediente_1850 (cerrado); expediente_2104 (cerrado); expediente_2519 (cerrado); expediente_2841 (cerrado); expediente_3206 (cerrado); expediente_3478 (cerrado); expediente_3902 (cerrado); expediente_4117 (cerrado); expediente_4583 (cerrado); expediente_4860 (cerrado); expediente_5135 (cerrado); expediente_5404 (cerrado); expediente_5829 (cerrado); expediente_6201 (cerrado); expediente_6534 (cerrado); expediente_6987 (cerrado); expediente_7240 (cerrado); expediente_7615 (cerrado); llave_archivo (abierto)\nContenedores revelados: ninguno\nCerraduras: puerta principal [id: puerta_principal] requiere llave del archivo [id: llave_archivo]\nInventario: vacío",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_archivo\"}",
+        "tool_output": "Tomas llave del archivo.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_archivo\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Usas llave del archivo con puerta principal. Se abre.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "<thinking>He examinado todos los objetos visibles y contenedores en la sala, y no hay cerraduras ni inventario adicionales. Ahora, presentaré el resumen de la información recopilada.</thinking>\n\nSala: Archivo central\nSalidas: norte -> ninguna; sur -> ninguna; este -> ninguna; oeste -> ninguna\nObjetos visibles: estanteria_archivo (abierto); puerta_principal (abierta); expediente_1042 (abierto); expediente_1387 (abierto); expediente_1850 (abierto); expediente_2104 (abierto); expediente_2519 (abierto); expediente_2841 (abierto); expediente_3206 (abierto); expediente_3478 (abierto); expediente_3902 (abierto); expediente_4117 (abierto); expediente_4583 (abierto); expediente_4860 (abierto); expediente_5135 (abierto); expediente_5404 (abierto); expediente_5829 (abierto); expediente_6201 (abierto); expediente_6534 (abierto); expediente_6987 (abierto); expediente_7240 (abierto); expediente_7615 (abierto)\nContenedores revelados: estanteria_archivo: expediente_1042; expediente_1387; expediente_1850; expediente_2104; expediente_2519; expediente_2841; expediente_3206; expediente_3478; expediente_3902; expediente_4117; expediente_4583; expediente_4860; expediente_5135; expediente_5404; expediente_5829; expediente_6201; expediente_6534; expediente_6987; expediente_7240; expediente_7615\nCerraduras: ninguna\nInventario: llave del archivo [id: llave_archivo]",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 17227,
+    "output_tokens": 298
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:archivo",
+    "take:llave_archivo",
+    "open:puerta_principal"
+  ],
+  "agent_mode": "adaptive",
+  "include_room_graph": true,
+  "explorer_cost": {
+    "calls": 3,
+    "input_tokens": 38870,
+    "output_tokens": 1904
+  }
+}

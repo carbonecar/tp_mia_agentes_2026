@@ -1,0 +1,130 @@
+{
+  "scenario": "color-locks",
+  "difficulty": "medium",
+  "trial": 1,
+  "goal": {
+    "type": "item_open",
+    "item": "puerta_principal"
+  },
+  "goal_achieved": true,
+  "goal_reason": "puerta principal está abierta",
+  "goal_achieved_at_step": 15,
+  "wall_clock_seconds": 30.631785750039853,
+  "agent_result": {
+    "answer": "<thinking>La puerta principal se ha abierto con éxito. Hemos cumplido el objetivo de salir del sótano.</thinking>",
+    "steps": [
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{}",
+        "tool_output": "(el explorador no devolvió ningún resumen; puede haber agotado sus pasos. Esto sí es seguro:)\nInventario: vacío\nCerraduras: cofre plateado [id: cofre_plata] requiere llave plateada [id: llave_plata]; cofre rojo [id: cofre_rojo] requiere llave roja [id: llave_roja]; cofre verde [id: cofre_verde] requiere llave verde [id: llave_verde]; puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_plata\"}",
+        "tool_output": "Tomas llave plateada.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": \"cofre_plata\"}",
+        "tool_output": "Sala: Sótano\nSalidas: ninguna\nObjetos visibles: cofre plateado [id: cofre_plata] (cerrada); cofre rojo [id: cofre_rojo] (cerrada); cofre verde [id: cofre_verde] (cerrada); cofre azul [id: cofre_azul] (abierta); puerta principal [id: puerta_principal] (cerrada)\nContenedores revelados: cofre_plata: ninguno\nCerraduras: cofre plateado [id: cofre_plata] requiere llave plateada [id: llave_plata]; cofre rojo [id: cofre_rojo] requiere llave roja [id: llave_roja]; cofre verde [id: cofre_verde] requiere llave verde [id: llave_verde]; puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: llave plateada [id: llave_plata]",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_plata\", \"target\": \"cofre_plata\"}",
+        "tool_output": "Usas llave plateada con cofre plateado. Se abre.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": \"cofre_plata\"}",
+        "tool_output": "Sala: Sótano\nSalidas: ninguna\nObjetos visibles: cofre plateado (abierta); cofre rojo (cerrada); cofre verde (cerrada); cofre azul (n/a); puerta principal (cerrada)\nContenedores revelados: cofre_plata: llave_roja\nCerraduras: cofre rojo [id: cofre_rojo] requiere llave roja [id: llave_roja]; cofre verde [id: cofre_verde] requiere llave verde [id: llave_verde]; puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: llave plateada [id: llave_plata]",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_roja\", \"target\": \"cofre_rojo\"}",
+        "tool_output": "Error: no llevas ningún 'llave_roja'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_roja\"}",
+        "tool_output": "Tomas llave roja.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_roja\", \"target\": \"cofre_rojo\"}",
+        "tool_output": "Usas llave roja con cofre rojo. Se abre.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": \"cofre_rojo\"}",
+        "tool_output": "Sala: Sótano\nSalidas: norte -> habitación principal (ninguna); sur -> ninguna (ninguna); este -> ninguna (ninguna); oeste -> ninguna (ninguna)\nObjetos visibles: cofre plateado [id: cofre_plata] (abierta); cofre rojo [id: cofre_rojo] (abierta); cofre verde [id: cofre_verde] (cerrada); cofre azul [id: cofre_azul] (cerrada); puerta principal [id: puerta_principal] (cerrada)\nContenedores revelados: cofre_rojo: llave verde [id: llave_verde]\nCerraduras: cofre verde [id: cofre_verde] requiere llave verde [id: llave_verde]; puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: llave plateada [id: llave_plata], llave roja [id: llave_roja]",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_verde\"}",
+        "tool_output": "Tomas llave verde.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_verde\", \"target\": \"cofre_verde\"}",
+        "tool_output": "Usas llave verde con cofre verde. Se abre.",
+        "error": null
+      },
+      {
+        "tool_name": "explorar_sala",
+        "tool_input": "{\"foco\": \"cofre_verde\"}",
+        "tool_output": "Sala: Sótano\nSalidas: puerta principal [id: puerta_principal] ->? (cerrada)\nObjetos visibles: cofre plateado [id: cofre_plata] (abierta); cofre rojo [id: cofre_rojo] (abierta); cofre verde [id: cofre_verde] (abierta); cofre azul [id: cofre_azul] (cerrada); puerta principal [id: puerta_principal] (cerrada)\nContenedores revelados: cofre verde [id: cofre_verde]: llave dorada [id: llave_oro]\nCerraduras: puerta principal [id: puerta_principal] requiere llave dorada [id: llave_oro]\nInventario: llave plateada [id: llave_plata], llave roja [id: llave_roja], llave verde [id: llave_verde]",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Error: no llevas ningún 'llave_oro'.",
+        "error": null
+      },
+      {
+        "tool_name": "take",
+        "tool_input": "{\"item\": \"llave_oro\"}",
+        "tool_output": "Tomas llave dorada.",
+        "error": null
+      },
+      {
+        "tool_name": "use",
+        "tool_input": "{\"item\": \"llave_oro\", \"target\": \"puerta_principal\"}",
+        "tool_output": "Usas llave dorada con puerta principal. Se abre.",
+        "error": null
+      }
+    ],
+    "error": null,
+    "input_tokens": 62691,
+    "output_tokens": 966
+  },
+  "run_error": null,
+  "event_log": [
+    "enter:sotano",
+    "take:llave_plata",
+    "open:cofre_plata",
+    "take:llave_roja",
+    "open:cofre_rojo",
+    "take:llave_verde",
+    "open:cofre_verde",
+    "take:llave_oro",
+    "open:puerta_principal"
+  ],
+  "agent_mode": "adaptive",
+  "include_room_graph": true,
+  "explorer_cost": {
+    "calls": 5,
+    "input_tokens": 21546,
+    "output_tokens": 1423
+  }
+}

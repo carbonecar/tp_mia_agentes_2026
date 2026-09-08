@@ -83,7 +83,9 @@ class EvalArgs:
     system_prompt: str | None
     system_prompt_file: str | None
     planner: bool
+    adaptive: bool
     agent_mode: str
+    room_graph: bool
     case_timeout_seconds: float | None
     judge: bool
 
@@ -124,7 +126,35 @@ class EvalArgs:
                 "'flat' (default): un único agente decide look/examine/take/use/go. "
                 "'subagent': el agente solo decide take/use/go y delega look/examine "
                 "en un sub-agente 'explorador' aparte, vía la tool `explorar_sala` "
-                "(experimento de delegación de tools)."
+                "(experimento de delegación de tools). "
+                "'adaptive': registra ambas rutas a la vez (look/examine directas Y "
+                "explorar_sala) — combinar con --adaptive para que el propio modelo "
+                "decida, por escenario, cuál usar."
+            ),
+        )
+        parser.add_argument(
+            "--adaptive",
+            action="store_true",
+            help=(
+                "activa la capa adaptativa (`MyAgent(adaptive=True)`): en vez de "
+                "planificar siempre (--planner) o nunca, la primera llamada dispara "
+                "una fase de triage donde el propio modelo evalúa la complejidad "
+                "aparente del objetivo y decide si conviene un plan de sub-metas y/o "
+                "delegar la exploración a `explorar_sala` (si está registrada — "
+                "combinar con --agent-mode adaptive para que lo esté). Tiene "
+                "precedencia sobre --planner si se pasan los dos."
+            ),
+        )
+        parser.add_argument(
+            "--room-graph",
+            action="store_true",
+            help=(
+                "agrega la tool `consultar_mapa` (sin LLM, sin costo): un mapa "
+                "determinístico de las salas ya visitadas y sus salidas, armado "
+                "directo desde el `World` (ver "
+                "`student_framework.tools.room_graph`). Independiente de "
+                "`--agent-mode`: se puede combinar con `flat`, `subagent` o "
+                "`adaptive` para comparar con/sin mapa en cualquiera de los tres."
             ),
         )
         parser.add_argument(
@@ -161,6 +191,8 @@ def _build_config(args: EvalArgs) -> dict[str, Any]:
         config["system_prompt"] = path.read_text(encoding="utf-8").strip()
     if args.planner:
         config["planner"] = True
+    if args.adaptive:
+        config["adaptive"] = True
     return config
 
 def _build_judge_agent(args: EvalArgs) -> Any:
@@ -209,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         config=config,
         trials=args.trials,
         agent_mode=args.agent_mode,
+        include_room_graph=args.room_graph,
         case_timeout_seconds=args.case_timeout_seconds,
         on_case=on_case,
     )
@@ -223,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
         "module": args.module,
         "config": config,
         "agent_mode": args.agent_mode,
+        "room_graph": args.room_graph,
         "case_timeout_seconds": args.case_timeout_seconds,
         "trials_per_scenario": args.trials,
         "wall_clock_seconds_total": elapsed,
@@ -242,10 +276,11 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     timeout_note = f" · case_timeout_seconds: `{args.case_timeout_seconds}`" if args.case_timeout_seconds is not None else ""
+    room_graph_note = " · room_graph: `True`" if args.room_graph else ""
     markdown = (
         f"## Resultados — `{args.label}`\n\n"
         f"config: `{config or '(default)'}` · agent_mode: `{args.agent_mode}` · módulo: `{args.module}`"
-        f"{timeout_note} · "
+        f"{room_graph_note}{timeout_note} · "
         f"{len(scenarios)} escenarios x {args.trials} trials · {elapsed:.1f}s total\n\n"
         f"{metrics.to_markdown_table(summary)}\n"
         f"{explorer_cost_line}\n"

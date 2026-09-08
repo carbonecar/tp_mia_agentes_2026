@@ -42,6 +42,7 @@ def build_agent(config: dict[str, Any] | None = None) -> Agent:
         "max_tool_retries",
         "retry_backoff_seconds",
         "planner",
+        "adaptive",
         "max_consecutive_repeats",
         "max_cycle_period",
         "max_blocked_repeats",
